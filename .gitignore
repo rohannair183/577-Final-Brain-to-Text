@@ -1,0 +1,12 @@
+# Bytecode and cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+
+# Data artifacts (raw and generated)
+data/
+
+# Local outputs
+submission_scratch.csv
