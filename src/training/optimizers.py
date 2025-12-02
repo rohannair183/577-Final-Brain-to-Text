@@ -42,7 +42,6 @@ def get_optimizer(model, optimizer_type, learning_rate, **kwargs):
         )
     
     elif optimizer_type == 'radam':
-        # Rectified Adam - more stable at start of training
         return optim.RAdam(
             params,
             lr=learning_rate,
