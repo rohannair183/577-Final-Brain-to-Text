@@ -111,7 +111,7 @@ model:
   num_phonemes: 41            # Number of phoneme classes (UPDATE after exploring data!)
   
   # RNN-specific parameters
-  hidden_dim: 768             # Hidden state size (RNN needs less than LSTM)
+  hidden_dim: 32             # Hidden state size (RNN needs less than LSTM)
   num_layers: 5               # Number of RNN layers (2-3 is typical)
   dropout: 0.4                # Dropout rate (lower for simpler model)
   bidirectional: true         # Bidirectional RNN (almost always better)
