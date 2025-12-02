@@ -17,7 +17,7 @@ def main(config_path):
     torch.manual_seed(config['experiment']['seed'])
     
     # Create dataloaders
-    train_loader, val_loader = create_dataloaders(config['data'])
+    train_loader, val_loader = create_dataloaders(config)
     
     # Create model (automatically picks the right one!)
     model = get_model(config['model'])

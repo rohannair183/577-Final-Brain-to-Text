@@ -55,7 +55,7 @@ model:
   num_phonemes: 41            # Number of phoneme classes (UPDATE after exploring data!)
   
   # RNN-specific parameters
-  hidden_dim: 256             # Hidden state size (RNN needs less than LSTM)
+  hidden_dim: 128             # Hidden state size (RNN needs less than LSTM)
   num_layers: 3               # Number of RNN layers (2-3 is typical)
   dropout: 0.05                # Dropout rate (lower for simpler model)
   bidirectional: true         # Bidirectional RNN (almost always better)
@@ -74,7 +74,7 @@ training:
   
   # Loss function
   loss:
-    type: "ctc"               # Cross-entropy loss for classification
+    type: "cross_entropy"               # Cross-entropy loss for classification
     blank_id: 0               # Blank token for CTC (usually 0)
   
   # Optimizer
@@ -95,7 +95,7 @@ training:
   gradient_clip: 1.0          # Clip gradients to prevent explosion
   
   # Checkpointing
-  checkpoint_dir: "experiments/baseline_rnn_bidirectional"
+  checkpoint_dir: "experiments/baseline_rnn_bidirectional_crossentropy_512_hidden"
   save_every_n_epochs: 5      # Save checkpoint every 5 epochs
   keep_last_n_checkpoints: 3  # Only keep last 3 checkpoints to save space
   

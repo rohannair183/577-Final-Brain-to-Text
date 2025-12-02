@@ -12,14 +12,12 @@ def create_dataloaders(config):
     Args:
         config: Dict with data configuration
     """
-    data_root = config['data_root']
+    data_root = config['data']['data_root']
     
     # Detect mode from loss type (if available in config)
     # Otherwise default to 'ctc'
-    if 'loss_type' in config:
-        mode = 'frame_level' if config['loss_type'] in ['cross_entropy', 'frame_ce'] else 'ctc'
-    else:
-        mode = config.get('mode', 'ctc')  # Allow explicit mode override
+    loss_type = config['training']['loss']['type']
+    mode = 'frame_level' if loss_type in ['cross_entropy', 'frame_ce'] else 'ctc'
     
     print(f"\n{'='*60}")
     print(f"Creating DataLoaders in '{mode}' mode")
@@ -27,7 +25,7 @@ def create_dataloaders(config):
     
     # Collect training files
     train_datasets = []
-    for session in config['train_sessions']:
+    for session in config['data']['train_sessions']:
         hdf5_path = os.path.join(data_root, session, 'data_train.hdf5')
         if os.path.exists(hdf5_path):
             train_datasets.append(BrainToTextDataset(hdf5_path, mode=mode))
@@ -38,7 +36,7 @@ def create_dataloaders(config):
     
     # Collect validation files
     val_datasets = []
-    for session in config['val_sessions']:
+    for session in config['data']['val_sessions']:
         hdf5_path = os.path.join(data_root, session, 'data_train.hdf5')
         if os.path.exists(hdf5_path):
             val_datasets.append(BrainToTextDataset(hdf5_path, mode=mode))
@@ -48,22 +46,22 @@ def create_dataloaders(config):
     # Create DataLoaders
     train_loader = DataLoader(
         train_dataset,
-        batch_size=config['batch_size'],
-        shuffle=config.get('shuffle_train', True),
+        batch_size=config['data']['batch_size'],
+        shuffle=config['data'].get('shuffle_train', True),
         collate_fn=collate_fn,
-        num_workers=config.get('num_workers', 0),
-        pin_memory=config.get('pin_memory', True)
+        num_workers=config['data'].get('num_workers', 0),
+        pin_memory=config['data'].get('pin_memory', True)
     )
     
     val_loader = None
     if val_dataset:
         val_loader = DataLoader(
             val_dataset,
-            batch_size=config['batch_size'],
+            batch_size=config['data']['batch_size'],
             shuffle=False,
             collate_fn=collate_fn,
-            num_workers=config.get('num_workers', 0),
-            pin_memory=config.get('pin_memory', True)
+            num_workers=config['data'].get('num_workers', 0),
+            pin_memory=config['data'].get('pin_memory', True)
         )
     
     return train_loader, val_loader
