@@ -6,7 +6,7 @@ __pycache__/
 .venv/
 
 # Data artifacts (raw and generated)
-data/
+raw/
 
 # Local outputs
 submission_scratch.csv

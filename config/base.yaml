@@ -21,13 +21,13 @@ data:
   # Training sessions (multiple sessions for more data)
   train_sessions:
     - "t15.2023.08.11"
-    # - "t15.2023.08.13"
-    # - "t15.2023.08.18"
-    # - "t15.2023.08.20"
-    # - "t15.2023.08.25"
-    # - "t15.2023.08.27"
-    # - "t15.2023.09.01"
-    # - "t15.2023.09.03"
+    - "t15.2023.08.13"
+    - "t15.2023.08.18"
+    - "t15.2023.08.20"
+    - "t15.2023.08.25"
+    - "t15.2023.08.27"
+    - "t15.2023.09.01"
+    - "t15.2023.09.03"
   
   # Validation sessions (held out for validation)
   val_sessions:
@@ -52,11 +52,11 @@ model:
   
   # Input/Output dimensions
   input_dim: 512              # Neural feature dimension (from HDF5)
-  num_phonemes: 50            # Number of phoneme classes (UPDATE after exploring data!)
+  num_phonemes: 41            # Number of phoneme classes (UPDATE after exploring data!)
   
   # LSTM-specific parameters
-  hidden_dim: 1 #512             # Hidden state size (larger = more capacity)
-  num_layers: 1 #2             # Number of LSTM layers (2-4 is typical)
+  hidden_dim: 512             # Hidden state size (larger = more capacity)
+  num_layers: 2             # Number of LSTM layers (2-4 is typical)
   dropout: 0.3                # Dropout rate (0.2-0.4 for regularization)
   bidirectional: true         # Bidirectional LSTM (almost always better)
   
