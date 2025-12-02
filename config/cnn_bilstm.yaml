@@ -57,7 +57,7 @@ training:
     blank_id: 0
 
   optimizer:
-    type: "adamw"
+    type: "sgd"
     learning_rate: 0.001
     weight_decay: 0.01
     betas: [0.9, 0.999]

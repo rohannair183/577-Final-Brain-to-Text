@@ -1,0 +1,14 @@
+# Bytecode and cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+
+# Data artifacts (raw and generated)
+raw/
+
+# Local outputs
+submission_scratch.csv
+
+*.hdf5
