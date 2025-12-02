@@ -11,57 +11,44 @@ def objective(trial):
     with open("config/cnn_bilstm.yaml") as f:
         config = yaml.safe_load(f)
     
-    # -----------------------------
     # Model hyperparameters
-    # -----------------------------
-    config['model']['lstm_hidden'] = trial.suggest_int("lstm_hidden", 128, 1024, step=64)
+    config['model']['lstm_hidden'] = trial.suggest_int("lstm_hidden", 128, 256, step=64)
     config['model']['lstm_layers'] = trial.suggest_int("lstm_layers", 1, 4)
     config['model']['conv_out'] = trial.suggest_int("conv_out", 16, 256, step=16)
     config['model']['conv_kernel_time'] = trial.suggest_int("conv_kernel_time", 3, 51, step=2)
 
-    # -----------------------------
     # Training hyperparameters
-    # -----------------------------
-    config['training']['optimizer']['learning_rate'] = trial.suggest_float("learning_rate", 1e-5, 1e-3, log=True)
-    config['training']['optimizer']['weight_decay'] = trial.suggest_float("weight_decay", 1e-6, 1e-2, log=True)
+    config['training']['optimizer']['learning_rate'] = trial.suggest_float("learning_rate", 0.00001, 0.0005 , log=True)
+    config['training']['optimizer']['weight_decay'] = trial.suggest_float("weight_decay", 1e-4, 1e-2, log=True)
     config['training']['gradient_clip'] = trial.suggest_float("gradient_clip", 0.1, 5.0)
     config['data']['batch_size'] = trial.suggest_categorical("batch_size", [4, 8, 16])
 
-    # -----------------------------
     # Create model and data
-    # -----------------------------
     model = get_model(config['model'])
     train_loader, val_loader = create_dataloaders(config)
     
-    # -----------------------------
     # Trainer
-    # -----------------------------
     trainer = Trainer(model, train_loader, val_loader, config)
     
     # Train for a few epochs to save time
-    trainer.train(num_epochs=3)
+    trainer.train(num_epochs=5)
     
-    # Return final validation PER (we want to minimize PER)
+    # Return final validation PER (Minimize PER)
     return trainer.val_pers[-1]
 
 if __name__ == "__main__":
     os.makedirs("results", exist_ok=True)
 
-    # -----------------------------
-    # Create study
-    # -----------------------------
+    # Create optuna study
     study = optuna.create_study(
         direction="minimize",
         study_name="cnn_bilstm_hyperparam_search",
-        storage=None  # or use sqlite DB for resuming: "sqlite:///optuna.db"
+        storage=None
     )
 
-    # Run optimization with timeout to limit total runtime (3 hours = 10800 sec)
     study.optimize(objective, timeout=10800, n_trials=50)  
 
-    # -----------------------------
     # Save trial results
-    # -----------------------------
     df = study.trials_dataframe()
     df.to_csv("results/cnn_bilstm_optuna_trials.csv", index=False)
     
