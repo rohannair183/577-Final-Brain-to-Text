@@ -111,9 +111,9 @@ model:
   num_phonemes: 41            # Number of phoneme classes (UPDATE after exploring data!)
   
   # RNN-specific parameters
-  hidden_dim: 128             # Hidden state size (RNN needs less than LSTM)
-  num_layers: 3               # Number of RNN layers (2-3 is typical)
-  dropout: 0.05                # Dropout rate (lower for simpler model)
+  hidden_dim: 768             # Hidden state size (RNN needs less than LSTM)
+  num_layers: 5               # Number of RNN layers (2-3 is typical)
+  dropout: 0.4                # Dropout rate (lower for simpler model)
   bidirectional: true         # Bidirectional RNN (almost always better)
   nonlinearity: "tanh"        # Options: "tanh" or "relu"
   
@@ -126,17 +126,17 @@ model:
 # TRAINING CONFIGURATION
 # ============================================================================
 training:
-  num_epochs: 50              # RNN trains faster, can do more epochs
+  num_epochs: 300              # RNN trains faster, can do more epochs
   
   # Loss function
   loss:
-    type: "cross_entropy"               # Cross-entropy loss for classification
+    type: "ctc"               # Cross-entropy loss for classification
     blank_id: 0               # Blank token for CTC (usually 0)
   
   # Optimizer
   optimizer:
     type: "adamw"             # AdamW with weight decay
-    learning_rate: 0.0001      # Slightly higher LR for simpler model
+    learning_rate: 0.005      # Slightly higher LR for simpler model
     weight_decay: 0.01        # L2 regularization
     betas: [0.9, 0.999]       # Adam beta parameters
     eps: 1.0e-8               # Adam epsilon for numerical stability
