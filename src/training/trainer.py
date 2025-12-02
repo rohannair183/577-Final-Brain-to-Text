@@ -143,7 +143,11 @@ class Trainer:
                 
                 # Compute metrics
                 batch_metrics = self.metrics.compute_metrics(
-                    outputs, targets, target_lengths, transcriptions
+                    outputs,
+                    targets,
+                    input_lengths,
+                    target_lengths,
+                    transcriptions
                 )
                 all_metrics.append(batch_metrics)
                 

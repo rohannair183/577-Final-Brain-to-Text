@@ -12,3 +12,6 @@ raw/
 submission_scratch.csv
 
 *.hdf5
+
+# Ignore experiment outputs (checkpoints, logs, Optuna results)
+experiments/

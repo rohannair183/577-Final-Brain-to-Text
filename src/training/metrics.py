@@ -1,103 +1,164 @@
 # src/training/metrics.py
+
 import torch
 import numpy as np
 from jiwer import wer, cer
 
 class PhonemeMetrics:
-    def __init__(self, phoneme_to_char_map=None):
+    def __init__(self, phoneme_to_char_map=None, blank_id=0):
         """
         Args:
-            phoneme_to_char_map: Dict mapping phoneme_id -> character(s)
-                                Or None to just compute Phoneme Error Rate
+            phoneme_to_char_map: Dict mapping phoneme_id -> character(s) (optional)
+            blank_id: ID used for the CTC blank symbol (default 0)
         """
         self.p2c_map = phoneme_to_char_map
-    
+        self.blank_id = blank_id
+
+    # ---------- Helpers ----------
+
+    def _collapse_ctc(self, seq):
+        """
+        Apply CTC collapsing:
+          - remove blanks
+          - collapse repeated symbols
+        seq: 1D array/list of ints
+        """
+        collapsed = []
+        prev = None
+        for s in seq:
+            s = int(s)
+            if s == self.blank_id:
+                prev = s
+                continue
+            if s == prev:
+                continue
+            collapsed.append(s)
+            prev = s
+        return collapsed
+
+    def _edit_distance(self, ref, hyp):
+        """
+        Levenshtein edit distance between two sequences of ints.
+        """
+        n, m = len(ref), len(hyp)
+        if n == 0:
+            return m
+        if m == 0:
+            return n
+
+        dp = np.zeros((n + 1, m + 1), dtype=np.int32)
+        for i in range(n + 1):
+            dp[i, 0] = i
+        for j in range(m + 1):
+            dp[0, j] = j
+
+        for i in range(1, n + 1):
+            for j in range(1, m + 1):
+                cost = 0 if ref[i - 1] == hyp[j - 1] else 1
+                dp[i, j] = min(
+                    dp[i - 1, j] + 1,      # deletion
+                    dp[i, j - 1] + 1,      # insertion
+                    dp[i - 1, j - 1] + cost  # substitution
+                )
+        return int(dp[n, m])
+
+    # ---------- Text conversion (optional) ----------
+
     def phonemes_to_text(self, phoneme_ids):
         """
-        Convert phoneme IDs to text.
-        
-        Args:
-            phoneme_ids: numpy array or list of phoneme IDs
-        
-        Returns:
-            text string
+        Convert phoneme IDs to text using phoneme_to_char_map.
+        If no mapping is provided, join IDs as a space-separated string.
         """
         if self.p2c_map is None:
-            # If no mapping, just return phoneme IDs as string for debugging
             return " ".join(str(p) for p in phoneme_ids if p > 0)
-        
+
         chars = []
         for pid in phoneme_ids:
-            if pid > 0:  # Skip padding/blank
+            if pid > 0:  # skip blank/padding
                 chars.append(self.p2c_map.get(int(pid), '?'))
         return "".join(chars)
-    
-    def compute_phoneme_error_rate(self, predictions, targets, target_lengths):
+
+    # ---------- PER computation ----------
+
+    def compute_phoneme_error_rate(self, predictions, targets, input_lengths, target_lengths):
         """
-        Compute Phoneme Error Rate (PER) - like WER but for phonemes.
-        
+        Compute Phoneme Error Rate (PER) using CTC-style decoding + edit distance.
+
         Args:
-            predictions: (batch, seq_len, vocab_size) logits
-            targets: (batch, seq_len) phoneme IDs (with -1 padding)
-            target_lengths: (batch,) actual lengths
+            predictions: (batch, T, vocab_size) logits
+            targets:     (batch, max_target_len) label IDs
+            input_lengths:  (batch,) valid time lengths for each prediction
+            target_lengths: (batch,) number of valid labels per sample
         """
-        pred_phonemes = torch.argmax(predictions, dim=-1)  # (batch, seq_len)
-        
-        total_errors = 0
+        # Greedy CTC decoding
+        pred_ids = torch.argmax(predictions, dim=-1)  # (B, T)
+
+        total_edits = 0
         total_phonemes = 0
-        
-        for pred, target, length in zip(pred_phonemes, targets, target_lengths):
-            # Get actual sequences (ignore padding)
-            pred_seq = pred[:length].cpu().numpy()
-            target_seq = target[:length].cpu().numpy()
-            target_seq = target_seq[target_seq != -1]  # Remove padding
-            
-            # Simple edit distance (you can use editdistance package)
-            errors = np.sum(pred_seq != target_seq)
-            total_errors += errors
+
+        for i in range(pred_ids.size(0)):
+            T = int(input_lengths[i].item())
+            L = int(target_lengths[i].item())
+
+            # Predicted sequence (apply CTC collapse)
+            pred_seq = pred_ids[i, :T].cpu().numpy()
+            pred_seq = self._collapse_ctc(pred_seq)
+
+            # Ground-truth label sequence
+            target_seq = targets[i, :L].cpu().numpy().tolist()
+
+            # Edit distance between sequences
+            dist = self._edit_distance(target_seq, pred_seq)
+
+            total_edits += dist
             total_phonemes += len(target_seq)
-        
-        per = total_errors / max(total_phonemes, 1)
+
+        if total_phonemes == 0:
+            return 1.0  # avoid divide-by-zero; treat as terrible
+
+        per = total_edits / total_phonemes
         return per
-    
-    def compute_metrics(self, predictions, targets, target_lengths, transcriptions=None):
+
+    # ---------- Overall metrics ----------
+
+    def compute_metrics(self, predictions, targets, input_lengths, target_lengths, transcriptions=None):
         """
-        Compute all metrics: PER and optionally CER/WER if phoneme mapping exists.
-        
+        Compute PER and optionally WER/CER if phoneme_mapping + transcriptions exist.
+
         Args:
-            predictions: (batch, seq_len, vocab_size)
-            targets: (batch, seq_len) phoneme IDs
-            target_lengths: (batch,) actual lengths
-            transcriptions: List of ground truth text strings (optional)
-        
+            predictions:    (batch, T, vocab_size) logits
+            targets:        (batch, max_target_len) label IDs
+            input_lengths:  (batch,)
+            target_lengths: (batch,)
+            transcriptions: list of true text strings (optional)
+
         Returns:
-            dict with metrics
+            dict with keys: 'per' (and optionally 'wer', 'cer')
         """
-        # Always compute Phoneme Error Rate
-        per = self.compute_phoneme_error_rate(predictions, targets, target_lengths)
-        
-        metrics = {'per': per}
-        
-        # If we have phoneme-to-char mapping and ground truth text, compute WER/CER
+        per = self.compute_phoneme_error_rate(
+            predictions, targets, input_lengths, target_lengths
+        )
+
+        metrics = {"per": per}
+
+        # Optional: WER/CER if we can map phonemes -> characters
         if self.p2c_map is not None and transcriptions is not None:
-            pred_phonemes = torch.argmax(predictions, dim=-1)
-            
+            pred_ids = torch.argmax(predictions, dim=-1)
+
             pred_texts = []
-            for pred, length in zip(pred_phonemes, target_lengths):
-                pred_seq = pred[:length].cpu().numpy()
-                pred_text = self.phonemes_to_text(pred_seq)
-                pred_texts.append(pred_text)
-            
-            # Compute WER/CER against ground truth transcriptions
+            for i in range(pred_ids.size(0)):
+                T = int(input_lengths[i].item())
+                seq = pred_ids[i, :T].cpu().numpy()
+                seq = self._collapse_ctc(seq)
+                pred_texts.append(self.phonemes_to_text(seq))
+
             try:
-                word_error_rate = wer(transcriptions, pred_texts)
-                char_error_rate = cer(transcriptions, pred_texts)
-                metrics['wer'] = word_error_rate
-                metrics['cer'] = char_error_rate
-            except:
-                # If error in computing, skip
+                metrics["wer"] = wer(transcriptions, pred_texts)
+                metrics["cer"] = cer(transcriptions, pred_texts)
+            except Exception:
+                # If jiwer complains, just skip WER/CER
                 pass
-        
+
         return metrics
 
 

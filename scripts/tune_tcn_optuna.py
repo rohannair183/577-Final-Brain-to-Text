@@ -32,7 +32,7 @@ def build_config(trial: optuna.Trial):
     data_config = {
         "data_root": "data/kaggle_raw/hdf5_data_final",
         "train_sessions": [
-            "t15.2023.08.11",  # same as your debug setup
+            "t15.2023.08.11",
         ],
         "val_sessions": [
             "t15.2023.09.24",
@@ -44,44 +44,40 @@ def build_config(trial: optuna.Trial):
     }
 
     # -----------------------------
-    # 2) Model: TCN hyperparameters for Optuna to tune
+    # 2) Model: TCN hyperparameters (tight search around known-good region)
     # -----------------------------
     model_config = {
         "type": "tcn",
         "input_dim": 512,
-        "num_phonemes": 41,  # we already determined 0..40 is valid
+        "num_phonemes": 41,  # 0..40 including blank
 
-        # Optuna search space
         "hidden_dim": trial.suggest_categorical(
-            "hidden_dim", [128, 192, 256, 320]
+            "hidden_dim", [256, 384]
         ),
-        "num_levels": trial.suggest_int("num_levels", 3, 6),
+        "num_levels": trial.suggest_int("num_levels", 3, 5),
         "kernel_size": trial.suggest_categorical(
-            "kernel_size", [3, 5, 7]
+            "kernel_size", [3, 5]
         ),
-        "dropout": trial.suggest_float("dropout", 0.1, 0.4, step=0.05),
+        "dropout": trial.suggest_float("dropout", 0.05, 0.30, step=0.05),
     }
 
     # -----------------------------
-    # 3) Optimizer & scheduler choice
+    # 3) Optimizer & scheduler choice (light, focused)
     # -----------------------------
     optimizer_type = trial.suggest_categorical(
-        "optimizer_type", ["adam", "adamw"] 
+        "optimizer_type", ["adam", "adamw"]
     )
 
     learning_rate = trial.suggest_float(
-        "learning_rate", 1e-4, 3e-3, log=True
+        "learning_rate", 3e-4, 3e-3, log=True
     )
 
     weight_decay = trial.suggest_float(
-        "weight_decay", 1e-6, 1e-3, log=True
+        "weight_decay", 1e-5, 1e-3, log=True
     )
 
-    scheduler_type = trial.suggest_categorical(
-        "scheduler_type", ["none", "cosine"]
-    )
-
-    num_epochs = 3  
+    scheduler_type = "none"
+    num_epochs = 4  
 
     training_config = {
         "num_epochs": num_epochs,
@@ -103,7 +99,7 @@ def build_config(trial: optuna.Trial):
 
         "scheduler": {
             "type": scheduler_type,
-            # t_max is only used if cosine; harmlessly ignored otherwise
+            # t_max is irrelevant for "none", harmless if present
             "t_max": num_epochs,
             "eta_min": 1e-6,
         },
@@ -141,7 +137,6 @@ def objective(trial: optuna.Trial) -> float:
     """
     set_seed(42 + trial.number)
 
-    # Build config for this trial
     config = build_config(trial)
 
     # Dataloaders
@@ -174,8 +169,7 @@ def main():
         study_name="tcn_optuna_small",
     )
 
-    # Small number of trials so it doesn't take forever
-    study.optimize(objective, n_trials=6)
+    study.optimize(objective, n_trials=10)
 
     print("\n=== Optuna finished ===")
     print(f"Best value (PER): {study.best_value:.4f}")
