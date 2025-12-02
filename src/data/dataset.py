@@ -66,7 +66,7 @@ def collate_fn(batch):
     # 3. Pad Inputs (Batch, Max_Time, 512)
     padded_inputs = pad_sequence(input_features_list, batch_first=True, padding_value=0.0)
     
-    # 4. Pad Targets (Batch, Max_Len) - Padding with -1
+    # 4. Pad Targets (Batch, Max_Len) - Padding with 0 for CTC blank
     padded_targets = pad_sequence(target_ids_list, batch_first=True, padding_value=0)
     
     return {
