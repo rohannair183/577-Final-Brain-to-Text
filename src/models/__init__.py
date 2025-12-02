@@ -3,6 +3,7 @@ from .lstm import LSTMDecoder
 from .transformer import TransformerDecoder
 from .conformer import ConformerDecoder
 from .simple_cnn import CNNDecoder
+from .tcn import TCNDecoder
 
 def get_model(model_config):
     """
@@ -52,6 +53,16 @@ def get_model(model_config):
             num_phonemes=model_config['num_phonemes'],
             num_layers=model_config.get('num_layers', 4),
             kernel_size=model_config.get('kernel_size', 3)
+        )
+    
+    elif model_type == 'tcn':
+        return TCNDecoder(
+            input_dim=model_config.get('input_dim', 512),
+            num_phonemes=model_config['num_phonemes'],
+            num_levels=model_config.get('num_levels', 5),
+            hidden_dim=model_config.get('hidden_dim', 256),
+            kernel_size=model_config.get('kernel_size', 3),
+            dropout=model_config.get('dropout', 0.2)
         )
     
     else:
