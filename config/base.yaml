@@ -1,0 +1,200 @@
+# config/base_config.yaml
+# Brain-to-Text Neural Decoding Configuration
+# This is your main config - copy and modify for experiments
+
+# ============================================================================
+# EXPERIMENT METADATA
+# ============================================================================
+experiment:
+  name: "baseline_lstm_bidirectional"
+  description: "Bidirectional LSTM with CTC loss - baseline experiment"
+  seed: 42
+  tags: ["lstm", "ctc", "baseline"]
+
+# ============================================================================
+# DATA CONFIGURATION
+# ============================================================================
+data:
+  # Path to your HDF5 data directory
+  data_root: src/data/raw/hdf5_data_final
+  
+  # Training sessions (multiple sessions for more data)
+  train_sessions:
+    - "t15.2023.08.11"
+    # - "t15.2023.08.13"
+    # - "t15.2023.08.18"
+    # - "t15.2023.08.20"
+    # - "t15.2023.08.25"
+    # - "t15.2023.08.27"
+    # - "t15.2023.09.01"
+    # - "t15.2023.09.03"
+  
+  # Validation sessions (held out for validation)
+  val_sessions:
+    - "t15.2023.09.24"
+    # - "t15.2023.09.29"
+  
+  # Test sessions (final evaluation - don't touch during development!)
+  test_sessions:
+    - "t15.2023.10.01"
+  
+  # DataLoader settings
+  batch_size: 16              # Reduce if OOM, increase if GPU underutilized
+  num_workers: 4              # Parallel data loading (set to 0 for debugging)
+  pin_memory: true            # Faster GPU transfer
+  shuffle_train: true         # Shuffle training data
+
+# ============================================================================
+# MODEL CONFIGURATION
+# ============================================================================
+model:
+  type: "lstm"                # Options: "lstm", "transformer", "conformer", "cnn"
+  
+  # Input/Output dimensions
+  input_dim: 512              # Neural feature dimension (from HDF5)
+  num_phonemes: 41            # Number of phoneme classes (UPDATE after exploring data!)
+  
+  # LSTM-specific parameters
+  hidden_dim: 512             # Hidden state size (larger = more capacity)
+  num_layers: 2             # Number of LSTM layers (2-4 is typical)
+  dropout: 0.3                # Dropout rate (0.2-0.4 for regularization)
+  bidirectional: true         # Bidirectional LSTM (almost always better)
+  
+  # Note: For other model types, add their specific params here
+  # Transformer: d_model, num_heads, etc.
+  # Conformer: encoder_dim, num_heads, etc.
+
+# ============================================================================
+# TRAINING CONFIGURATION
+# ============================================================================
+training:
+  num_epochs: 10              # Total training epochs
+  
+  # Loss function
+  loss:
+    type: "ctc"               # Options: "ctc", "cross_entropy", "seq2seq"
+    blank_id: 0               # Blank token for CTC (usually 0)
+  
+  # Optimizer
+  optimizer:
+    type: "adamw"             # Options: "adam", "adamw", "sgd", "radam"
+    learning_rate: 0.001      # Initial learning rate (1e-3 is good starting point)
+    weight_decay: 0.01        # L2 regularization (0.01 is typical for AdamW)
+    betas: [0.9, 0.999]       # Adam beta parameters
+    eps: 1.0e-8               # Adam epsilon for numerical stability
+    
+    # SGD-specific (if using SGD)
+    momentum: 0.9
+    nesterov: true
+  
+  # Learning rate scheduler
+  scheduler:
+    type: "cosine"            # Options: "cosine", "step", "plateau", "onecycle", "none"
+    t_max: 50                 # Cosine: cycles over this many epochs
+    eta_min: 1.0e-6           # Cosine: minimum learning rate
+    
+    # Plateau-specific (if using plateau)
+    # factor: 0.5
+    # patience: 5
+    # mode: "min"
+    
+    # Step-specific (if using step)
+    # step_size: 10
+    # gamma: 0.1
+  
+  # Gradient clipping
+  gradient_clip: 1.0          # Clip gradients to prevent explosion
+  
+  # Checkpointing
+  checkpoint_dir: "experiments/baseline_lstm_bidirectional"
+  save_every_n_epochs: 5      # Save checkpoint every N epochs
+  keep_last_n_checkpoints: 3  # Only keep last N checkpoints to save space
+  
+  # Early stopping (optional)
+  early_stopping:
+    enabled: true
+    patience: 10              # Stop if no improvement for N epochs
+    metric: "val_per"         # Metric to monitor: "val_loss", "val_per", "val_wer"
+    mode: "min"               # "min" for loss/error, "max" for accuracy
+
+# ============================================================================
+# VALIDATION & EVALUATION
+# ============================================================================
+evaluation:
+  # Validation frequency
+  validate_every_n_epochs: 1  # Run validation every N epochs
+  
+  # Metrics to compute
+  compute_per: true           # Phoneme Error Rate
+  compute_wer: false          # Word Error Rate (needs phoneme-to-char mapping)
+  compute_cer: false          # Character Error Rate (needs phoneme-to-char mapping)
+  
+  # Phoneme-to-character mapping (optional, for WER/CER)
+  phoneme_to_char_map: null   # Set to dict or path to mapping file
+  
+  # Inference settings
+  decode_method: "greedy"     # Options: "greedy", "beam_search"
+  beam_width: 10              # If using beam search
+
+# ============================================================================
+# LOGGING & VISUALIZATION
+# ============================================================================
+logging:
+  # Logging directory
+  log_dir: "experiments/baseline_lstm_bidirectional/logs"
+  
+  # Console logging
+  log_every_n_steps: 50       # Print training stats every N batches
+  
+  # TensorBoard / Weights & Biases
+  use_tensorboard: true       # Enable TensorBoard logging
+  use_wandb: false            # Enable Weights & Biases (set to true if using)
+  wandb_project: "brain-to-text-challenge"
+  wandb_entity: null          # Your W&B username/team
+  
+  # What to log
+  log_learning_rate: true
+  log_gradients: false        # Log gradient norms (can be slow)
+  log_weights: false          # Log weight histograms (can be slow)
+  
+  # Sample predictions to log during validation
+  log_n_predictions: 5        # Log N sample predictions each validation
+
+# ============================================================================
+# COMPUTE RESOURCES
+# ============================================================================
+compute:
+  device: "cuda"              # "cuda" or "cpu" (auto-detected if cuda available)
+  mixed_precision: false      # Use mixed precision training (faster, less memory)
+  cudnn_benchmark: true       # Enable cuDNN autotuner (faster for fixed input sizes)
+  deterministic: false        # Make training deterministic (slower but reproducible)
+
+# ============================================================================
+# DEBUGGING & DEVELOPMENT
+# ============================================================================
+debug:
+  # Quick testing mode (use tiny dataset)
+  fast_dev_run: false         # Run 1 train + 1 val batch to test pipeline
+  overfit_batches: 0          # Overfit on N batches (0 = disabled, good for debugging)
+  
+  # Profiling
+  profile: false              # Enable PyTorch profiler
+  detect_anomaly: false       # Detect autograd anomalies (slow, for debugging NaNs)
+  
+  # Data validation
+  check_data_once: true       # Validate data shapes/types on first batch
+
+# ============================================================================
+# NOTES & REMINDERS
+# ============================================================================
+# TODO List:
+# [ ] Run scripts/explore_phonemes.py to find actual num_phonemes
+# [ ] Update num_phonemes in this config
+# [ ] Verify session names match your data directory
+# [ ] Set up Weights & Biases if desired (update wandb settings)
+# [ ] Create phoneme-to-character mapping for WER/CER metrics
+# [ ] After baseline works, experiment with:
+#     - Different model types (transformer, conformer)
+#     - Different learning rates
+#     - Data augmentation
+#     - Ensemble methods
