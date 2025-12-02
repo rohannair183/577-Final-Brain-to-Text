@@ -6,10 +6,10 @@ experiment:
   name: "cnn_bilstm_baseline"
   description: "Simple Conv frontend + BiLSTM encoder. Supports CTC and Seq2Seq modes"
   seed: 42
-  tags: ["cnn", "lstm", "ctc", "seq2seq", "baseline"]
+  tags: ["cnn", "lstm"]
 
 data:
-  data_root: src/data/raw/hdf5_data_final
+  data_root: data/raw/hdf5_data_final
   train_sessions:
     - "t15.2023.08.11"
     - "t15.2023.08.13"
