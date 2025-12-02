@@ -2,6 +2,7 @@
 import torch
 import numpy as np
 from jiwer import wer, cer
+from typing import Sequence
 
 class PhonemeMetrics:
     def __init__(self, phoneme_to_char_map=None):
@@ -41,22 +42,65 @@ class PhonemeMetrics:
             targets: (batch, seq_len) phoneme IDs (with -1 padding)
             target_lengths: (batch,) actual lengths
         """
+        """
+        Improved PER computation:
+        - Argmax the predictions
+        - For each sequence collapse repeated predictions and remove CTC blank (assumed id=0)
+        - Remove padding from targets (padding id = -1)
+        - Compute Levenshtein edit distance between predicted phoneme sequence and target sequence
+        """
         pred_phonemes = torch.argmax(predictions, dim=-1)  # (batch, seq_len)
-        
+
+        def levenshtein(a: Sequence[int], b: Sequence[int]) -> int:
+            # simple DP implementation
+            la, lb = len(a), len(b)
+            if la == 0:
+                return lb
+            if lb == 0:
+                return la
+            dp = np.zeros((la + 1, lb + 1), dtype=int)
+            for i in range(la + 1):
+                dp[i, 0] = i
+            for j in range(lb + 1):
+                dp[0, j] = j
+            for i in range(1, la + 1):
+                for j in range(1, lb + 1):
+                    cost = 0 if a[i - 1] == b[j - 1] else 1
+                    dp[i, j] = min(
+                        dp[i - 1, j] + 1,      # deletion
+                        dp[i, j - 1] + 1,      # insertion
+                        dp[i - 1, j - 1] + cost  # substitution
+                    )
+            return int(dp[la, lb])
+
         total_errors = 0
         total_phonemes = 0
-        
+
+        BLANK_ID = 0
         for pred, target, length in zip(pred_phonemes, targets, target_lengths):
-            # Get actual sequences (ignore padding)
-            pred_seq = pred[:length].cpu().numpy()
+            # pred: Tensor(seq_len,), target: Tensor(seq_len or target_len,)
+            pred_seq = pred[:length].cpu().numpy().tolist()
+
+            # Collapse repeats and remove blanks (CTC-style decoding)
+            collapsed = []
+            prev = None
+            for p in pred_seq:
+                if p == prev:
+                    prev = p
+                    continue
+                prev = p
+                if int(p) == BLANK_ID:
+                    continue
+                collapsed.append(int(p))
+
+            # Target: remove padding (-1)
             target_seq = target[:length].cpu().numpy()
-            target_seq = target_seq[target_seq != -1]  # Remove padding
-            
-            # Simple edit distance (you can use editdistance package)
-            errors = np.sum(pred_seq != target_seq)
+            target_seq = [int(x) for x in target_seq if int(x) != -1]
+
+            errors = levenshtein(collapsed, target_seq)
             total_errors += errors
             total_phonemes += len(target_seq)
-        
+
         per = total_errors / max(total_phonemes, 1)
         return per
     
@@ -136,3 +180,5 @@ if __name__ == "__main__":
     
     results = metrics.compute_metrics(preds, targets, lengths)
     print(f"Results: {results}")
+
+    
