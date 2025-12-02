@@ -1,138 +1,183 @@
-# src/training/metrics.py
+# src/training/metrics.py - CORRECTED FOR CTC
+
 import torch
 import numpy as np
 from jiwer import wer, cer
 
 class PhonemeMetrics:
-    def __init__(self, phoneme_to_char_map=None):
+    def __init__(self, phoneme_to_char_map=None, blank_id=0):
         """
         Args:
-            phoneme_to_char_map: Dict mapping phoneme_id -> character(s)
-                                Or None to just compute Phoneme Error Rate
+            phoneme_to_char_map: Optional mapping for WER/CER
+            blank_id: CTC blank token (usually 0)
         """
         self.p2c_map = phoneme_to_char_map
+        self.blank_id = blank_id
     
-    def phonemes_to_text(self, phoneme_ids):
+    def ctc_greedy_decode(self, prediction):
         """
-        Convert phoneme IDs to text.
+        Greedy CTC decoding: collapse blanks and remove consecutive duplicates.
         
         Args:
-            phoneme_ids: numpy array or list of phoneme IDs
+            prediction: (time_steps,) tensor of predicted token IDs
         
         Returns:
-            text string
+            List of decoded phoneme IDs
         """
-        if self.p2c_map is None:
-            # If no mapping, just return phoneme IDs as string for debugging
-            return " ".join(str(p) for p in phoneme_ids if p > 0)
+        decoded = []
+        prev_token = None
         
-        chars = []
-        for pid in phoneme_ids:
-            if pid > 0:  # Skip padding/blank
-                chars.append(self.p2c_map.get(int(pid), '?'))
-        return "".join(chars)
+        for token_id in prediction:
+            token_id = token_id.item()
+            
+            # Skip blanks
+            if token_id == self.blank_id:
+                prev_token = None
+                continue
+            
+            # Skip consecutive duplicates
+            if token_id != prev_token:
+                decoded.append(token_id)
+                prev_token = token_id
+        
+        return decoded
+    
+    def edit_distance(self, seq1, seq2):
+        """
+        Compute Levenshtein edit distance.
+        """
+        len1, len2 = len(seq1), len(seq2)
+        
+        # DP table
+        dp = [[0] * (len2 + 1) for _ in range(len1 + 1)]
+        
+        # Initialize
+        for i in range(len1 + 1):
+            dp[i][0] = i
+        for j in range(len2 + 1):
+            dp[0][j] = j
+        
+        # Fill table
+        for i in range(1, len1 + 1):
+            for j in range(1, len2 + 1):
+                if seq1[i-1] == seq2[j-1]:
+                    dp[i][j] = dp[i-1][j-1]
+                else:
+                    dp[i][j] = 1 + min(
+                        dp[i-1][j],      # Deletion
+                        dp[i][j-1],      # Insertion
+                        dp[i-1][j-1]     # Substitution
+                    )
+        
+        return dp[len1][len2]
     
     def compute_phoneme_error_rate(self, predictions, targets, target_lengths):
         """
-        Compute Phoneme Error Rate (PER) - like WER but for phonemes.
+        Compute Phoneme Error Rate with proper CTC decoding.
         
         Args:
-            predictions: (batch, seq_len, vocab_size) logits
-            targets: (batch, seq_len) phoneme IDs (with -1 padding)
-            target_lengths: (batch,) actual lengths
+            predictions: (batch, time_steps, vocab_size) logits
+            targets: (batch, max_target_len) phoneme IDs
+            target_lengths: (batch,) actual target lengths
         """
-        pred_phonemes = torch.argmax(predictions, dim=-1)  # (batch, seq_len)
+        # Get most likely tokens
+        pred_tokens = torch.argmax(predictions, dim=-1)  # (batch, time_steps)
         
-        total_errors = 0
+        total_distance = 0
         total_phonemes = 0
         
-        for pred, target, length in zip(pred_phonemes, targets, target_lengths):
-            # Get actual sequences (ignore padding)
-            pred_seq = pred[:length].cpu().numpy()
-            target_seq = target[:length].cpu().numpy()
-            target_seq = target_seq[target_seq != -1]  # Remove padding
+        for pred, target, length in zip(pred_tokens, targets, target_lengths):
+            # STEP 1: CTC decode the FULL prediction sequence
+            decoded = self.ctc_greedy_decode(pred)  # Decode all frames!
             
-            # Simple edit distance (you can use editdistance package)
-            errors = np.sum(pred_seq != target_seq)
-            total_errors += errors
-            total_phonemes += len(target_seq)
+            # STEP 2: Get ground truth (remove padding)
+            target_seq = target[:length].cpu().numpy()
+            target_seq = target_seq[target_seq != -1]
+            target_list = target_seq.tolist()
+            
+            # STEP 3: Compute edit distance
+            distance = self.edit_distance(decoded, target_list)
+            
+            total_distance += distance
+            total_phonemes += len(target_list)
         
-        per = total_errors / max(total_phonemes, 1)
+        per = total_distance / max(total_phonemes, 1)
         return per
     
     def compute_metrics(self, predictions, targets, target_lengths, transcriptions=None):
         """
-        Compute all metrics: PER and optionally CER/WER if phoneme mapping exists.
+        Compute all metrics with proper CTC decoding.
         
         Args:
-            predictions: (batch, seq_len, vocab_size)
-            targets: (batch, seq_len) phoneme IDs
-            target_lengths: (batch,) actual lengths
-            transcriptions: List of ground truth text strings (optional)
+            predictions: (batch, time_steps, vocab_size)
+            targets: (batch, max_target_len)
+            target_lengths: (batch,)
+            transcriptions: Optional list of text strings
         
         Returns:
             dict with metrics
         """
-        # Always compute Phoneme Error Rate
+        # Compute PER with proper CTC decoding
         per = self.compute_phoneme_error_rate(predictions, targets, target_lengths)
         
         metrics = {'per': per}
         
-        # If we have phoneme-to-char mapping and ground truth text, compute WER/CER
-        if self.p2c_map is not None and transcriptions is not None:
-            pred_phonemes = torch.argmax(predictions, dim=-1)
-            
-            pred_texts = []
-            for pred, length in zip(pred_phonemes, target_lengths):
-                pred_seq = pred[:length].cpu().numpy()
-                pred_text = self.phonemes_to_text(pred_seq)
-                pred_texts.append(pred_text)
-            
-            # Compute WER/CER against ground truth transcriptions
-            try:
-                word_error_rate = wer(transcriptions, pred_texts)
-                char_error_rate = cer(transcriptions, pred_texts)
-                metrics['wer'] = word_error_rate
-                metrics['cer'] = char_error_rate
-            except:
-                # If error in computing, skip
-                pass
+        # TODO: WER/CER if needed
         
         return metrics
 
 
-# Create phoneme vocabulary explorer
-def explore_phoneme_vocab(hdf5_path):
-    """Find all unique phoneme IDs in dataset"""
-    import h5py
-    
-    all_phonemes = set()
-    with h5py.File(hdf5_path, 'r') as f:
-        for trial_name in list(f.keys())[:100]:  # Sample first 100
-            if trial_name.startswith('trial_'):
-                phonemes = f[trial_name]['seq_class_ids'][:]
-                all_phonemes.update(phonemes[phonemes != 0])
-    
-    phoneme_list = sorted(all_phonemes)
-    print(f"Found {len(phoneme_list)} unique phonemes")
-    print(f"Phoneme IDs: {phoneme_list}")
-    return phoneme_list
-
-
+# Test the corrected implementation
 if __name__ == "__main__":
-    # Explore vocabulary
-    phonemes = explore_phoneme_vocab(
-        "data/raw/hdf5_data_final/t15.2023.08.11/data_train.hdf5"
-    )
+    print("Testing CTC decoding...")
     
-    # For now, use PER-only metrics (no phoneme-to-char mapping)
-    metrics = PhonemeMetrics(phoneme_to_char_map=None)
+    metrics = PhonemeMetrics(blank_id=0)
     
-    # Test
-    preds = torch.randn(2, 10, 50)  # (batch=2, seq=10, vocab=50)
-    targets = torch.tensor([[1,2,3,4,5,-1,-1,-1,-1,-1],
-                           [6,7,8,9,10,11,-1,-1,-1,-1]])
-    lengths = torch.tensor([5, 6])
+    # Test 1: CTC decoding
+    print("\nTest 1: CTC Decoding")
+    # Simulate CTC output: [blank, 5, 5, blank, 7, blank, 12, 12]
+    prediction = torch.tensor([0, 5, 5, 0, 7, 0, 12, 12])
+    decoded = metrics.ctc_greedy_decode(prediction)
+    print(f"  Input:    {prediction.numpy()}")
+    print(f"  Decoded:  {decoded}")
+    print(f"  Expected: [5, 7, 12]")
+    assert decoded == [5, 7, 12], "❌ CTC decoding failed!"
+    print("  ✅ PASS")
     
-    results = metrics.compute_metrics(preds, targets, lengths)
-    print(f"Results: {results}")
+    # Test 2: Perfect predictions (PER should be 0)
+    print("\nTest 2: Perfect Predictions")
+    predictions = torch.zeros(2, 100, 41)
+    targets = torch.tensor([[5, 7, 12, -1, -1],
+                           [3, 8, 15, -1, -1]])
+    target_lengths = torch.tensor([3, 2])
+    
+    # Make predictions match targets perfectly
+    # Sample 0: encode [5, 7, 12] in CTC format
+    predictions[0, 0:10, 5] = 10.0   # Phoneme 5
+    predictions[0, 10:20, 7] = 10.0  # Phoneme 7
+    predictions[0, 20:30, 12] = 10.0 # Phoneme 12
+    predictions[0, 30:, 0] = 10.0    # Blanks
+    
+    # Sample 1: encode [3, 8] in CTC format
+    predictions[1, 0:10, 3] = 10.0
+    predictions[1, 10:20, 8] = 10.0
+    predictions[1, 20:, 0] = 10.0
+    
+    per = metrics.compute_phoneme_error_rate(predictions, targets, target_lengths)
+    print(f"  PER: {per:.4f}")
+    print(f"  Expected: 0.0")
+    assert per < 0.01, "❌ PER should be 0 for perfect predictions!"
+    print("  ✅ PASS")
+    
+    # Test 3: Random predictions (PER should be high)
+    print("\nTest 3: Random Predictions")
+    predictions = torch.randn(2, 100, 41)
+    per = metrics.compute_phoneme_error_rate(predictions, targets, target_lengths)
+    print(f"  PER: {per:.4f}")
+    print(f"  Expected: ~0.9-1.0")
+    assert per > 0.7, "❌ PER should be high for random!"
+    print("  ✅ PASS")
+    
+    print("\n" + "="*60)
+    print("✅ ALL TESTS PASSED - Metric is now correct!")
+    print("="*60)
