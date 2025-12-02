@@ -14,24 +14,24 @@ def objective(trial):
     # -----------------------------
     # Model hyperparameters
     # -----------------------------
-    config['model']['lstm_hidden'] = trial.suggest_int("lstm_hidden", 128, 512)
+    config['model']['lstm_hidden'] = trial.suggest_int("lstm_hidden", 128, 1024, step=64)
     config['model']['lstm_layers'] = trial.suggest_int("lstm_layers", 1, 4)
-    config['model']['conv_out'] = trial.suggest_int("conv_out", 32, 128)
-    config['model']['conv_kernel_time'] = trial.suggest_int("conv_kernel_time", 5, 50)
+    config['model']['conv_out'] = trial.suggest_int("conv_out", 16, 256, step=16)
+    config['model']['conv_kernel_time'] = trial.suggest_int("conv_kernel_time", 3, 51, step=2)
 
     # -----------------------------
     # Training hyperparameters
     # -----------------------------
-    config['training']['optimizer']['learning_rate'] = trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True)
-    config['training']['optimizer']['weight_decay'] = trial.suggest_float("weight_decay", 0.0, 0.1)
-    config['training']['gradient_clip'] = trial.suggest_float("gradient_clip", 0.5, 2.0)
+    config['training']['optimizer']['learning_rate'] = trial.suggest_float("learning_rate", 1e-5, 1e-3, log=True)
+    config['training']['optimizer']['weight_decay'] = trial.suggest_float("weight_decay", 1e-6, 1e-2, log=True)
+    config['training']['gradient_clip'] = trial.suggest_float("gradient_clip", 0.1, 5.0)
     config['data']['batch_size'] = trial.suggest_categorical("batch_size", [4, 8, 16])
 
     # -----------------------------
     # Create model and data
     # -----------------------------
     model = get_model(config['model'])
-    train_loader, val_loader = create_dataloaders(config['data'])
+    train_loader, val_loader = create_dataloaders(config)
     
     # -----------------------------
     # Trainer

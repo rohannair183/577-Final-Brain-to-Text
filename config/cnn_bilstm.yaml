@@ -6,7 +6,7 @@ experiment:
   name: "cnn_bilstm_baseline"
   description: "Simple Conv frontend + BiLSTM encoder. Supports CTC and Seq2Seq modes"
   seed: 42
-  tags: ["cnn", "lstm"]
+  tags: ["cnn", "lstm", "ctc", "seq2seq", "baseline"]
 
 data:
   data_root: data/raw/hdf5_data_final
@@ -57,8 +57,8 @@ training:
     blank_id: 0
 
   optimizer:
-    type: "sgd"
-    learning_rate: 0.001
+    type: "adamw"
+    learning_rate: 0.0005
     weight_decay: 0.01
     betas: [0.9, 0.999]
     eps: 0.00000001
