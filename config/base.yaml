@@ -21,18 +21,18 @@ data:
   # Training sessions (multiple sessions for more data)
   train_sessions:
     - "t15.2023.08.11"
-    - "t15.2023.08.13"
-    - "t15.2023.08.18"
-    - "t15.2023.08.20"
-    - "t15.2023.08.25"
-    - "t15.2023.08.27"
-    - "t15.2023.09.01"
-    - "t15.2023.09.03"
+    # - "t15.2023.08.13"
+    # - "t15.2023.08.18"
+    # - "t15.2023.08.20"
+    # - "t15.2023.08.25"
+    # - "t15.2023.08.27"
+    # - "t15.2023.09.01"
+    # - "t15.2023.09.03"
   
   # Validation sessions (held out for validation)
   val_sessions:
     - "t15.2023.09.24"
-    - "t15.2023.09.29"
+    # - "t15.2023.09.29"
   
   # Test sessions (final evaluation - don't touch during development!)
   test_sessions:
@@ -55,8 +55,8 @@ model:
   num_phonemes: 50            # Number of phoneme classes (UPDATE after exploring data!)
   
   # LSTM-specific parameters
-  hidden_dim: 512             # Hidden state size (larger = more capacity)
-  num_layers: 3               # Number of LSTM layers (2-4 is typical)
+  hidden_dim: 1 #512             # Hidden state size (larger = more capacity)
+  num_layers: 1 #2             # Number of LSTM layers (2-4 is typical)
   dropout: 0.3                # Dropout rate (0.2-0.4 for regularization)
   bidirectional: true         # Bidirectional LSTM (almost always better)
   
@@ -106,7 +106,7 @@ training:
   gradient_clip: 1.0          # Clip gradients to prevent explosion
   
   # Checkpointing
-  checkpoint_dir: "experiments/baseline_lstm_bidirectional/checkpoints"
+  checkpoint_dir: "experiments/baseline_lstm_bidirectional"
   save_every_n_epochs: 5      # Save checkpoint every N epochs
   keep_last_n_checkpoints: 3  # Only keep last N checkpoints to save space
   

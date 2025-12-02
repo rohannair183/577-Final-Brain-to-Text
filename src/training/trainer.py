@@ -195,8 +195,10 @@ class Trainer:
             'best_val_per': self.best_val_per,
             'config': self.config
         }
-        
-        save_path = os.path.join(self.config['checkpoint_dir'], filename)
-        os.makedirs(self.config['checkpoint_dir'], exist_ok=True)
-        torch.save(checkpoint, save_path)
-        print(f"Saved checkpoint: {save_path}")
+        try:
+            save_path = os.path.join(self.config['training']['checkpoint_dir'], filename)
+            os.makedirs(self.config['training']['checkpoint_dir'], exist_ok=True)
+            torch.save(checkpoint, save_path)
+            print(f"Saved checkpoint: {save_path}")
+        except Exception as e:
+            print(f"Error saving checkpoint: {e}")
