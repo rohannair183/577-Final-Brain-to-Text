@@ -4,6 +4,7 @@ from .transformer import TransformerDecoder
 from .conformer import ConformerDecoder
 from .simple_cnn import CNNDecoder
 from .tcn import TCNDecoder
+from .rnn import RNNDecoder
 
 def get_model(model_config):
     """
@@ -16,8 +17,17 @@ def get_model(model_config):
         Model instance
     """
     model_type = model_config['type']
-    
-    if model_type == 'lstm':
+    if model_type == 'rnn':
+        return RNNDecoder(
+            input_dim=model_config.get('input_dim', 512),
+            hidden_dim=model_config['hidden_dim'],
+            num_phonemes=model_config['num_phonemes'],
+            num_layers=model_config.get('num_layers', 2),
+            dropout=model_config.get('dropout', 0.2),
+            bidirectional=model_config.get('bidirectional', True),
+            nonlinearity=model_config.get('nonlinearity', 'tanh')
+        )
+    elif model_type == 'lstm':
         return LSTMDecoder(
             input_dim=model_config.get('input_dim', 512),
             hidden_dim=model_config['hidden_dim'],

@@ -21,18 +21,18 @@ data:
   # Training sessions (multiple sessions for more data)
   train_sessions:
     - "t15.2023.08.11"
-    # - "t15.2023.08.13"
-    # - "t15.2023.08.18"
-    # - "t15.2023.08.20"
-    # - "t15.2023.08.25"
-    # - "t15.2023.08.27"
-    # - "t15.2023.09.01"
-    # - "t15.2023.09.03"
+    - "t15.2023.08.13"
+    - "t15.2023.08.18"
+   # - "t15.2023.08.20"
+   # - "t15.2023.08.25"
+   # - "t15.2023.08.27"
+   # - "t15.2023.09.01"
+   # - "t15.2023.09.03"
   
   # Validation sessions (held out for validation)
   val_sessions:
     - "t15.2023.09.24"
-    # - "t15.2023.09.29"
+    - "t15.2023.09.29"
   
   # Test sessions (final evaluation - don't touch during development!)
   test_sessions:
@@ -52,13 +52,13 @@ model:
   
   # Input/Output dimensions
   input_dim: 512              # Neural feature dimension (from HDF5)
-  num_phonemes: 50            # Number of phoneme classes (UPDATE after exploring data!)
+  num_phonemes: 41            # Number of phoneme classes (UPDATE after exploring data!)
   
   # LSTM-specific parameters
-  hidden_dim: 1 #512             # Hidden state size (larger = more capacity)
-  num_layers: 1 #2             # Number of LSTM layers (2-4 is typical)
-  kernerl_size: 3            # Convolutional kernel size for TCN
-  dropout: 0.3                # Dropout rate (0.2-0.4 for regularization)
+  hidden_dim: 256          # Hidden state size (larger = more capacity)
+  num_levels: 4             # Number of LSTM layers (2-4 is typical)
+  kernel_size: 3            # Convolutional kernel size for TCN
+  dropout: 0.1                # Dropout rate (0.2-0.4 for regularization)
   
   # Note: For other model types, add their specific params here
   # Transformer: d_model, num_heads, etc.
@@ -78,8 +78,8 @@ training:
   # Optimizer
   optimizer:
     type: "adamw"             # Options: "adam", "adamw", "sgd", "radam"
-    learning_rate: 0.001      # Initial learning rate (1e-3 is good starting point)
-    weight_decay: 0.01        # L2 regularization (0.01 is typical for AdamW)
+    learning_rate: 0.0009364444023312285      # Initial learning rate (1e-3 is good starting point)
+    weight_decay: 0.00011012494650328171        # L2 regularization (0.01 is typical for AdamW)
     betas: [0.9, 0.999]       # Adam beta parameters
     eps: 1.0e-8               # Adam epsilon for numerical stability
     
@@ -89,9 +89,8 @@ training:
   
   # Learning rate scheduler
   scheduler:
-    type: "cosine"            # Options: "cosine", "step", "plateau", "onecycle", "none"
-    t_max: 50                 # Cosine: cycles over this many epochs
-    eta_min: 1.0e-6           # Cosine: minimum learning rate
+    type: "none"            # Options: "cosine", "step", "plateau", "onecycle", "none"
+
     
     # Plateau-specific (if using plateau)
     # factor: 0.5

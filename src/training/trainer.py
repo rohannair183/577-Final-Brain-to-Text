@@ -50,6 +50,8 @@ class Trainer:
         self.train_losses = []
         self.val_losses = []
         self.val_pers = []
+        self.best_epoch = -1
+        self.best_metrics = None
         
         print(f"Using loss: {loss_config['type']}")
         print(f"Using optimizer: {opt_config['type']}")
@@ -110,16 +112,29 @@ class Trainer:
         all_metrics = []
         
         with torch.no_grad():
-            for batch in tqdm(self.val_loader, desc="Validation"):
+            for batch_idx, batch in tqdm(enumerate(self.val_loader), desc="Validation"):
                 inputs = batch['input_features'].to(self.device)
                 targets = batch['target_ids'].to(self.device)
                 input_lengths = batch['input_lengths']
                 target_lengths = batch['target_lengths']
                 transcriptions = batch['transcriptions']
+                # DEBUG: Print first batch predictions
                 
                 # Forward pass
                 outputs = self.model(inputs, input_lengths)
-                
+
+                if batch_idx == 0:
+                    pred_tokens = torch.argmax(outputs[0], dim=-1)
+                    target_tokens = targets[0][:target_lengths[0]]
+                    
+                    print(f"\n{'='*60}")
+                    print(f"DEBUG: First validation sample")
+                    print(f"Target phonemes: {target_tokens.cpu().numpy()}")
+                    print(f"Predicted phonemes: {pred_tokens.cpu().numpy()[:50]}")  # First 50
+                    print(f"Unique predictions: {torch.unique(pred_tokens).cpu().numpy()}")
+                    print(f"Most common prediction: {torch.mode(pred_tokens).values.item()}")
+                    print(f"{'='*60}\n")
+                    
                 # Compute loss
                 loss = self.criterion(outputs, targets, input_lengths, target_lengths)
                 
@@ -131,6 +146,7 @@ class Trainer:
                     outputs, targets, target_lengths, transcriptions
                 )
                 all_metrics.append(batch_metrics)
+                
         
         # Aggregate
         avg_loss = total_loss / num_batches
@@ -176,12 +192,28 @@ class Trainer:
                 # Save best model based on PER
                 if val_metrics['val_per'] < self.best_val_per:
                     self.best_val_per = val_metrics['val_per']
+                    self.best_epoch = epoch
+                    self.best_metrics = val_metrics
                     self.save_checkpoint('best_model.pt')
-                    print(f"✓ New best PER: {self.best_val_per:.3f}")
+                    print(f"✓ New best PER: {self.best_val_per:.3f} (epoch {epoch})")
+
             
             # Periodic checkpoint
             if (epoch + 1) % 5 == 0:
                 self.save_checkpoint(f'checkpoint_epoch_{epoch}.pt')
+
+        print("\n=== Training complete ===")
+        if self.best_metrics is not None:
+            print(f"Best epoch: {self.best_epoch}")
+            print(f"Best Val PER: {self.best_val_per:.3f}")
+            print(f"Best Val Loss: {self.best_metrics['val_loss']:.4f}")
+            if 'val_wer' in self.best_metrics:
+                print(f"Best Val WER: {self.best_metrics['val_wer']:.3f}")
+                print(f"Best Val CER: {self.best_metrics['val_cer']:.3f}")
+            print("Best checkpoint saved to: best_model.pt")
+        else:
+            print("No validation metrics were recorded.")
+
     
     def save_checkpoint(self, filename):
         """Save model checkpoint"""
