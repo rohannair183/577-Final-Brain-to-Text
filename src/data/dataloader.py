@@ -37,7 +37,7 @@ def create_dataloaders(config):
     # Collect validation files
     val_datasets = []
     for session in config['data']['val_sessions']:
-        hdf5_path = os.path.join(data_root, session, 'data_train.hdf5')
+        hdf5_path = os.path.join(data_root, session, 'data_val.hdf5')
         if os.path.exists(hdf5_path):
             val_datasets.append(BrainToTextDataset(hdf5_path, mode=mode))
     
