@@ -1,6 +1,7 @@
 # Bytecode and cache
 __pycache__/
 *.pyc
+src/models/__pycache__/
 
 # Virtual environments
 .venv/
@@ -13,5 +14,9 @@ submission_scratch.csv
 
 *.hdf5
 
+<<<<<<< HEAD
 # Ignore experiment outputs (checkpoints, logs, Optuna results)
 experiments/
+=======
+*.pt
+>>>>>>> 14188cc41c5b4ce968690566eb32871b7aae3790

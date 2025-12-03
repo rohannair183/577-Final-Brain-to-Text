@@ -1,13 +1,13 @@
 # config/rnn_baseline_config.yaml
 # Brain-to-Text Neural Decoding Configuration
-# Simple RNN Baseline - faster and simpler than LSTM
+# Simple RNN Baseline
 
 # ============================================================================
 # EXPERIMENT METADATA
 # ============================================================================
 experiment:
   name: "baseline_rnn_bidirectional"
-  description: "Simple bidirectional RNN baseline - faster than LSTM for quick experiments"
+  description: "Simple bidirectional RNN baseline"
   seed: 42
   tags: ["rnn", "ctc", "baseline", "simple"]
 
@@ -20,23 +20,79 @@ data:
   
   # Training sessions (start with one, add more as you validate)
   train_sessions:
-    - "t15.2023.08.11"
-    # - "t15.2023.08.13"
-    # - "t15.2023.08.18"
-    # - "t15.2023.08.20"
-    # - "t15.2023.08.25"
-    # - "t15.2023.08.27"
-    # - "t15.2023.09.01"
-    # - "t15.2023.09.03"
+  - t15.2023.08.11
+  - t15.2023.08.13
+  - t15.2023.08.18
+  - t15.2023.08.20
+  - t15.2023.08.25
+  - t15.2023.08.27
+  - t15.2023.09.01
+  - t15.2023.09.03
+  - t15.2023.09.24
+  - t15.2023.09.29
+  - t15.2023.10.01
+  - t15.2023.10.06
+  - t15.2023.10.08
+  - t15.2023.10.13
+  - t15.2023.10.15
+  - t15.2023.10.20
+  - t15.2023.10.22
+  - t15.2023.11.03
+  - t15.2023.11.04
+  - t15.2023.11.17
+  - t15.2023.11.19
+  - t15.2023.11.26
+
   
   # Validation sessions (held out for validation)
   val_sessions:
-    - "t15.2023.09.24"
-    # - "t15.2023.09.29"
+  - t15.2023.08.11
+  - t15.2023.08.13
+  - t15.2023.08.18
+  - t15.2023.08.20
+  - t15.2023.08.25
+  - t15.2023.08.27
+  - t15.2023.09.01
+  - t15.2023.09.03
+  - t15.2023.09.24
+  - t15.2023.09.29
+  - t15.2023.10.01
+  - t15.2023.10.06
+  - t15.2023.10.08
+  - t15.2023.10.13
+  - t15.2023.10.15
+  - t15.2023.10.20
+  - t15.2023.10.22
+  - t15.2023.11.03
+  - t15.2023.11.04
+  - t15.2023.11.17
+  - t15.2023.11.19
+  - t15.2023.11.26
   
   # Test sessions (final evaluation - don't touch during development!)
   test_sessions:
-    - "t15.2023.10.01"
+  - t15.2023.08.11
+  - t15.2023.08.13
+  - t15.2023.08.18
+  - t15.2023.08.20
+  - t15.2023.08.25
+  - t15.2023.08.27
+  - t15.2023.09.01
+  - t15.2023.09.03
+  - t15.2023.09.24
+  - t15.2023.09.29
+  - t15.2023.10.01
+  - t15.2023.10.06
+  - t15.2023.10.08
+  - t15.2023.10.13
+  - t15.2023.10.15
+  - t15.2023.10.20
+  - t15.2023.10.22
+  - t15.2023.11.03
+  - t15.2023.11.04
+  - t15.2023.11.17
+  - t15.2023.11.19
+  - t15.2023.11.26
   
   # DataLoader settings
   batch_size: 32              # RNN is lighter, can use larger batch
@@ -52,12 +108,12 @@ model:
   
   # Input/Output dimensions
   input_dim: 512              # Neural feature dimension (from HDF5)
-  num_phonemes: 50            # Number of phoneme classes (UPDATE after exploring data!)
+  num_phonemes: 41            # Number of phoneme classes (UPDATE after exploring data!)
   
   # RNN-specific parameters
-  hidden_dim: 256             # Hidden state size (RNN needs less than LSTM)
-  num_layers: 2               # Number of RNN layers (2-3 is typical)
-  dropout: 0.2                # Dropout rate (lower for simpler model)
+  hidden_dim: 128             # Hidden state size (RNN needs less than LSTM)
+  num_layers: 3               # Number of RNN layers (2-3 is typical)
+  dropout: 0.4                # Dropout rate (lower for simpler model)
   bidirectional: true         # Bidirectional RNN (almost always better)
   nonlinearity: "tanh"        # Options: "tanh" or "relu"
   
@@ -70,17 +126,17 @@ model:
 # TRAINING CONFIGURATION
 # ============================================================================
 training:
-  num_epochs: 20              # RNN trains faster, can do more epochs
+  num_epochs: 15              # RNN trains faster, can do more epochs
   
   # Loss function
   loss:
-    type: "ctc"               # CTC loss for variable-length alignment
+    type: "ctc"               # Cross-entropy loss for classification
     blank_id: 0               # Blank token for CTC (usually 0)
   
   # Optimizer
   optimizer:
     type: "adamw"             # AdamW with weight decay
-    learning_rate: 0.002      # Slightly higher LR for simpler model
+    learning_rate: 0.001      # Slightly higher LR for simpler model
     weight_decay: 0.01        # L2 regularization
     betas: [0.9, 0.999]       # Adam beta parameters
     eps: 1.0e-8               # Adam epsilon for numerical stability

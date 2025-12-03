@@ -1,0 +1,197 @@
+# config/rnn_baseline_config.yaml
+# Brain-to-Text Neural Decoding Configuration
+# Simple RNN Baseline - faster and simpler than LSTM
+
+# ============================================================================
+# EXPERIMENT METADATA
+# ============================================================================
+experiment:
+  name: "baseline_rnn_bidirectional"
+  description: "Simple bidirectional RNN baseline - faster than LSTM for quick experiments"
+  seed: 42
+  tags: ["rnn", "ctc", "baseline", "simple"]
+
+# ============================================================================
+# DATA CONFIGURATION
+# ============================================================================
+data:
+  # Path to your HDF5 data directory
+  data_root: "data/raw/hdf5_data_final"
+  
+  # Training sessions (start with one, add more as you validate)
+  train_sessions:
+    - "t15.2023.08.11"
+    - "t15.2023.08.13"
+    - "t15.2023.08.18"
+    - "t15.2023.08.20"
+    - "t15.2023.08.25"
+    - "t15.2023.08.27"
+    - "t15.2023.09.01"
+    - "t15.2023.09.03"
+    
+
+  
+  # Validation sessions (held out for validation)
+  val_sessions:
+    - "t15.2023.09.24"
+    - "t15.2023.09.29"
+  
+  # Test sessions (final evaluation - don't touch during development!)
+  test_sessions:
+    - "t15.2023.10.01"
+  
+  # DataLoader settings
+  batch_size: 32              # RNN is lighter, can use larger batch
+  num_workers: 4              # Parallel data loading (set to 0 for debugging)
+  pin_memory: true            # Faster GPU transfer
+  shuffle_train: true         # Shuffle training data
+
+# ============================================================================
+# MODEL CONFIGURATION
+# ============================================================================
+model:
+  type: "rnn"                 # Using simple RNN baseline
+  
+  # Input/Output dimensions
+  input_dim: 256              # Neural feature dimension (from HDF5)
+  num_phonemes: 50            # Number of phoneme classes (UPDATE after exploring data!)
+  
+  # RNN-specific parameters
+  hidden_dim: 512            # Hidden state size (RNN needs less than LSTM)
+  num_layers: 2               # Number of RNN layers (2-3 is typical)
+  dropout: 0.2                # Dropout rate (lower for simpler model)
+  bidirectional: true         # Bidirectional RNN (almost always better)
+  nonlinearity: "tanh"        # Options: "tanh" or "relu"
+  
+  # Note: RNN is simpler than LSTM:
+  # - No cell state (only hidden state)
+  # - Faster training and inference
+  # - Good baseline for comparison
+
+# ============================================================================
+# TRAINING CONFIGURATION
+# ============================================================================
+training:
+  num_epochs: 5           # RNN trains faster, can do more epochs
+  
+  # Loss function
+  loss:
+    type: "ctc"               # CTC loss for variable-length alignment
+    blank_id: 0               # Blank token for CTC (usually 0)
+  
+  # Optimizer
+  optimizer:
+    type: "adamw"             # AdamW with weight decay
+    learning_rate: 0.001      # Slightly higher LR for simpler model
+    weight_decay: 0.01        # L2 regularization
+    betas: [0.9, 0.999]       # Adam beta parameters
+    eps: 1.0e-8               # Adam epsilon for numerical stability
+  
+  # Learning rate scheduler
+  scheduler:
+    type: "cosine"            # Smooth cosine decay
+    t_max: 20                 # Match num_epochs
+    eta_min: 1.0e-6           # Minimum learning rate
+  
+  # Gradient clipping
+  gradient_clip: 1.0          # Clip gradients to prevent explosion
+  
+  # Checkpointing
+  checkpoint_dir: "experiments/baseline_rnn_bidirectional"
+  save_every_n_epochs: 5      # Save checkpoint every 5 epochs
+  keep_last_n_checkpoints: 3  # Only keep last 3 checkpoints to save space
+  
+  # Early stopping
+  early_stopping:
+    enabled: true
+    patience: 8               # Lower patience for faster baseline
+    metric: "val_per"         # Monitor Phoneme Error Rate
+    mode: "min"               # Minimize PER
+
+# ============================================================================
+# VALIDATION & EVALUATION
+# ============================================================================
+evaluation:
+  # Validation frequency
+  validate_every_n_epochs: 1  # Validate every epoch
+  
+  # Metrics to compute
+  compute_per: true           # Phoneme Error Rate (primary metric)
+  compute_wer: false          # Word Error Rate (needs phoneme-to-char mapping)
+  compute_cer: false          # Character Error Rate (needs phoneme-to-char mapping)
+  
+  # Phoneme-to-character mapping (optional, for WER/CER)
+  phoneme_to_char_map: null   # Set to dict or path to mapping file
+  
+  # Inference settings
+  decode_method: "greedy"     # Simple greedy decoding for baseline
+  beam_width: 10              # Not used for greedy
+
+# ============================================================================
+# LOGGING & VISUALIZATION
+# ============================================================================
+logging:
+  # Logging directory
+  log_dir: "experiments/baseline_rnn_bidirectional/logs"
+  
+  # Console logging
+  log_every_n_steps: 25       # Print stats more frequently for quick feedback
+  
+  # TensorBoard / Weights & Biases
+  use_tensorboard: true       # Enable TensorBoard logging
+  use_wandb: false            # Enable Weights & Biases (optional)
+  wandb_project: "brain-to-text-challenge"
+  wandb_entity: null          # Your W&B username/team
+  
+  # What to log
+  log_learning_rate: true
+  log_gradients: false        # Can enable for debugging
+  log_weights: false          # Can enable for debugging
+  
+  # Sample predictions to log during validation
+  log_n_predictions: 5        # Log 5 sample predictions each validation
+
+# ============================================================================
+# COMPUTE RESOURCES
+# ============================================================================
+compute:
+  device: "cuda"              # "cuda" or "cpu" (auto-detected)
+  mixed_precision: false      # Use FP16 training (faster, less memory)
+  cudnn_benchmark: true       # Enable cuDNN autotuner
+  deterministic: false        # Make training deterministic (slower)
+
+# ============================================================================
+# DEBUGGING & DEVELOPMENT
+# ============================================================================
+debug:
+  # Quick testing mode
+  fast_dev_run: false         # Run 1 train + 1 val batch to test pipeline
+  overfit_batches: 0          # Overfit on N batches (0 = disabled)
+  
+  # Profiling
+  profile: false              # Enable PyTorch profiler
+  detect_anomaly: false       # Detect autograd anomalies (for NaN debugging)
+  
+  # Data validation
+  check_data_once: true       # Validate data shapes/types on first batch
+
+# ============================================================================
+# NOTES & REMINDERS
+# ============================================================================
+# RNN Baseline Notes:
+# - Simpler than LSTM: no cell state, just hidden state
+# - Faster training: ~30% faster than LSTM
+# - Less memory: can use larger batch sizes
+# - Good baseline: if LSTM doesn't beat this significantly, may have other issues
+# - Comparison: Run this first, then compare LSTM/Transformer performance
+#
+# TODO List:
+# [x] Created simple RNN baseline model
+# [ ] Run scripts/explore_phonemes.py to find actual num_phonemes
+# [ ] Update num_phonemes in this config
+# [ ] Train RNN baseline to get benchmark numbers
+# [ ] Compare with LSTM performance
+# [ ] If RNN works well, try:
+#     - Increase hidden_dim (256 -> 512)
+#     - Add more layers (2 -> 3)
+#     - Try 'relu' nonlinearity instead of 'tanh'

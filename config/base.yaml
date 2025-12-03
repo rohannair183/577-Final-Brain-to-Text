@@ -55,7 +55,7 @@ model:
   num_phonemes: 41            # Number of phoneme classes (UPDATE after exploring data!)
   
   # LSTM-specific parameters
-  hidden_dim: 512             # Hidden state size (larger = more capacity)
+  hidden_dim: 256             # Hidden state size (larger = more capacity)
   num_layers: 2             # Number of LSTM layers (2-4 is typical)
   dropout: 0.3                # Dropout rate (0.2-0.4 for regularization)
   bidirectional: true         # Bidirectional LSTM (almost always better)
@@ -72,7 +72,7 @@ training:
   
   # Loss function
   loss:
-    type: "ctc"               # Options: "ctc", "cross_entropy", "seq2seq"
+    type: "cross_entropy"               # Options: "ctc", "cross_entropy", "seq2seq"
     blank_id: 0               # Blank token for CTC (usually 0)
   
   # Optimizer

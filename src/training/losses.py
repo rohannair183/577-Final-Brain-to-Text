@@ -59,14 +59,14 @@ class CTCLoss(nn.Module):
         return loss
 
 
+# src/training/losses.py
+
 class CrossEntropyLoss(nn.Module):
-    """
-    Standard frame-by-frame classification loss.
-    Use when you have frame-level phoneme labels.
-    """
-    def __init__(self, ignore_index=-1):
+    """Frame-level cross-entropy loss."""
+    def __init__(self, blank_id=0, ignore_index=-1):
         super().__init__()
         self.loss_fn = nn.CrossEntropyLoss(ignore_index=ignore_index)
+        self.first_call = True
     
     def forward(self, logits, targets, input_lengths=None, target_lengths=None):
         """
@@ -74,10 +74,11 @@ class CrossEntropyLoss(nn.Module):
             logits: (batch, time, num_classes)
             targets: (batch, time)
         """
-        return self.loss_fn(
-            logits.reshape(-1, logits.size(-1)),
-            targets.reshape(-1)
-        )
+        # Reshape and compute loss
+        logits_flat = logits.reshape(-1, logits.size(-1))
+        targets_flat = targets.reshape(-1)
+        
+        return self.loss_fn(logits_flat, targets_flat)
 
 
 class Seq2SeqLoss(nn.Module):

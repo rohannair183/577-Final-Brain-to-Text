@@ -1,0 +1,171 @@
+# config/cnn_bilstm.yaml
+# CNN + BiLSTM config (fits models in src/models/cnn_bilstm.py)
+
+experiment:
+  name: "cnn_bilstm"
+  description: "Simple Conv frontend + BiLSTM encoder. Supports CTC modes"
+  seed: 42
+  tags: ["cnn", "lstm", "ctc"]
+
+data:
+  data_root: data/raw/hdf5_data_final
+  # Training sessions  (start with one, add more as you validate)
+  train_sessions:
+  - t15.2023.08.13
+  - t15.2023.08.18
+  - t15.2023.08.20
+  - t15.2023.08.25
+  - t15.2023.08.27
+  - t15.2023.09.01
+  - t15.2023.09.03
+  - t15.2023.09.24
+  - t15.2023.09.29
+  - t15.2023.10.01
+  - t15.2023.10.06
+  - t15.2023.10.08
+  - t15.2023.10.13
+  - t15.2023.10.15
+  - t15.2023.10.20
+  - t15.2023.10.22
+  - t15.2023.11.03
+  - t15.2023.11.04
+  - t15.2023.11.17
+  - t15.2023.11.19
+  - t15.2023.11.26
+
+  
+  # Validation sessions (held out for validation)
+  val_sessions:
+  - t15.2023.08.13
+  - t15.2023.08.18
+  - t15.2023.08.20
+  - t15.2023.08.25
+  - t15.2023.08.27
+  - t15.2023.09.01
+  - t15.2023.09.03
+  - t15.2023.09.24
+  - t15.2023.09.29
+  - t15.2023.10.01
+  - t15.2023.10.06
+  - t15.2023.10.08
+  - t15.2023.10.13
+  - t15.2023.10.15
+  - t15.2023.10.20
+  - t15.2023.10.22
+  - t15.2023.11.03
+  - t15.2023.11.04
+  - t15.2023.11.17
+  - t15.2023.11.19
+  - t15.2023.11.26
+  
+  # Test sessions (final evaluation - don't touch during development!)
+  test_sessions:
+  - t15.2023.08.13
+  - t15.2023.08.18
+  - t15.2023.08.20
+  - t15.2023.08.25
+  - t15.2023.08.27
+  - t15.2023.09.01
+  - t15.2023.09.03
+  - t15.2023.09.24
+  - t15.2023.09.29
+  - t15.2023.10.01
+  - t15.2023.10.06
+  - t15.2023.10.08
+  - t15.2023.10.13
+  - t15.2023.10.15
+  - t15.2023.10.20
+  - t15.2023.10.22
+  - t15.2023.11.03
+  - t15.2023.11.04
+  - t15.2023.11.17
+  - t15.2023.11.19
+  - t15.2023.11.26
+  batch_size: 8
+  num_workers: 4
+  pin_memory: true
+  shuffle_train: true
+
+# Model configuration specific to src/models/cnn_bilstm.py
+model:
+  type: "cnn_bilstm"
+
+  input_dim: 512            # feature dimension per time frame
+  num_phonemes: 41          # keep for compatibility; also set vocab_size below
+  vocab_size: 41            # vocabulary size / number of output tokens
+
+  # Cnn frontend params (SimpleConvFrontend)
+  conv_out: 64              # output channels from conv frontend (out_ch)
+  conv_kernel_time: 25      # temporal kernel size used by frontend
+
+  # Bi-LSTM backend layers (CTCModel)
+  lstm_hidden: 256
+  lstm_layers: 2
+
+# Training configuration 
+training:
+  # number of epochs for each training
+  num_epochs: 20
+
+  # Loss options: 'ctc' or 'cross_entropy' 
+  loss:
+    type: "ctc"
+    blank_id: 0
+
+  # Optimizer options : 'adamw' or 'sgd'
+  optimizer:
+    type: "adamw"
+    learning_rate: 0.0005 
+    weight_decay: 0.01
+    betas: [0.9, 0.999]
+    eps: 0.00000001
+
+  scheduler:
+    type: "cosine"
+    t_max: 30
+    eta_min: 0.000001
+
+  gradient_clip: 1.0
+
+  checkpoint_dir: "experiments/cnn_bilstm_baseline"
+  save_every_n_epochs: 5
+  keep_last_n_checkpoints: 3
+
+  early_stopping:
+    enabled: true
+    patience: 10
+    metric: "val_per"
+    mode: "min"
+
+evaluation:
+  validate_every_n_epochs: 1
+  compute_per: true
+  compute_wer: false
+  compute_cer: false
+  decode_method: "greedy"
+  beam_width: 10
+
+logging:
+  log_dir: "experiments/cnn_bilstm_baseline/logs"
+  log_every_n_steps: 50
+  use_tensorboard: true
+  use_wandb: false
+  wandb_project: "brain-to-text-challenge"
+  wandb_entity: null
+  log_learning_rate: true
+  log_gradients: false
+  log_weights: false
+  log_n_predictions: 5
+
+compute:
+  device: "cuda"
+  mixed_precision: false
+  cudnn_benchmark: true
+  deterministic: false
+
+debug:
+  fast_dev_run: false
+  overfit_batches: 0
+  profile: false
+  detect_anomaly: false
+  check_data_once: true

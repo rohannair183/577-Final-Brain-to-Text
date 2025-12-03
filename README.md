@@ -1,4 +1,4 @@
-# 577-Final-Brain-to-Text
+# SYDE577-Final-Brain-to-Text
 
 Brain-to-Text Final Project
 

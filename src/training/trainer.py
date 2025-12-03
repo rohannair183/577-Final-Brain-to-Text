@@ -5,6 +5,8 @@ import os
 from .metrics import PhonemeMetrics
 from .losses import get_loss_function
 from .optimizers import get_optimizer, get_scheduler
+import os
+import pandas as pd
 
 class Trainer:
     def __init__(self, model, train_loader, val_loader, config):
@@ -118,22 +120,9 @@ class Trainer:
                 input_lengths = batch['input_lengths']
                 target_lengths = batch['target_lengths']
                 transcriptions = batch['transcriptions']
-                # DEBUG: Print first batch predictions
                 
                 # Forward pass
                 outputs = self.model(inputs, input_lengths)
-
-                if batch_idx == 0:
-                    pred_tokens = torch.argmax(outputs[0], dim=-1)
-                    target_tokens = targets[0][:target_lengths[0]]
-                    
-                    print(f"\n{'='*60}")
-                    print(f"DEBUG: First validation sample")
-                    print(f"Target phonemes: {target_tokens.cpu().numpy()}")
-                    print(f"Predicted phonemes: {pred_tokens.cpu().numpy()[:50]}")  # First 50
-                    print(f"Unique predictions: {torch.unique(pred_tokens).cpu().numpy()}")
-                    print(f"Most common prediction: {torch.mode(pred_tokens).values.item()}")
-                    print(f"{'='*60}\n")
                     
                 # Compute loss
                 loss = self.criterion(outputs, targets, input_lengths, target_lengths)
@@ -199,8 +188,15 @@ class Trainer:
                     self.best_epoch = epoch
                     self.best_metrics = val_metrics
                     self.save_checkpoint('best_model.pt')
+<<<<<<< HEAD
                     print(f"✓ New best PER: {self.best_val_per:.3f} (epoch {epoch})")
 
+=======
+                    print(f"✓ New best PER: {self.best_val_per:.3f}")
+                
+            # Save metrics to CSV after each epoch
+            self.save_metrics_to_csv(f"results/{self.config['model']['type']}_metrics.csv")
+>>>>>>> 14188cc41c5b4ce968690566eb32871b7aae3790
             
             # Periodic checkpoint
             if (epoch + 1) % 5 == 0:
@@ -238,3 +234,21 @@ class Trainer:
             print(f"Saved checkpoint: {save_path}")
         except Exception as e:
             print(f"Error saving checkpoint: {e}")
+            
+
+
+    def save_metrics_to_csv(self, filename):
+        # Ensure the folder exists
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        
+        # Create a DataFrame from your tracked metrics
+        data = {
+            'epoch': list(range(len(self.train_losses))),
+            'train_loss': self.train_losses,
+            'val_loss': self.val_losses,
+            'val_per': self.val_pers
+        }
+        df = pd.DataFrame(data)
+        
+        # Save to CSV (overwrite or append as needed)
+        df.to_csv(filename, index=False)
