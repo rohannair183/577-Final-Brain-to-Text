@@ -1,3 +1,5 @@
+# src/training/metrics.py
+
 import torch
 import numpy as np
 from jiwer import wer, cer
@@ -112,8 +114,10 @@ class PhonemeMetrics:
         
         per = total_distance / max(total_phonemes, 1)
         return per
-    
-    def compute_metrics(self, predictions, targets, target_lengths, transcriptions=None):
+
+    # ---------- Overall metrics ----------
+
+    def compute_metrics(self, predictions, targets, input_lengths, target_lengths, transcriptions=None):
         """
         Compute all metrics with proper CTC decoding.
         
@@ -124,7 +128,7 @@ class PhonemeMetrics:
             transcriptions: Optional list of text strings
         
         Returns:
-            dict with metrics
+            dict with keys: 'per' (and optionally 'wer', 'cer')
         """
         # Compute PER with proper CTC decoding
         per = self.compute_phoneme_error_rate(predictions, targets, target_lengths)
