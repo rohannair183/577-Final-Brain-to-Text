@@ -11,7 +11,6 @@ data:
   data_root: data/raw/hdf5_data_final
   # Training sessions  (start with one, add more as you validate)
   train_sessions:
-  - t15.2023.08.11
   - t15.2023.08.13
   - t15.2023.08.18
   - t15.2023.08.20
@@ -37,7 +36,6 @@ data:
   
   # Validation sessions (held out for validation)
   val_sessions:
-  - t15.2023.08.11
   - t15.2023.08.13
   - t15.2023.08.18
   - t15.2023.08.20
@@ -62,7 +60,6 @@ data:
   
   # Test sessions (final evaluation - don't touch during development!)
   test_sessions:
-  - t15.2023.08.11
   - t15.2023.08.13
   - t15.2023.08.18
   - t15.2023.08.20
@@ -172,4 +169,3 @@ debug:
   profile: false
   detect_anomaly: false
   check_data_once: true
-
