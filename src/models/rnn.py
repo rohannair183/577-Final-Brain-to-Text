@@ -55,8 +55,6 @@ class RNNDecoder(nn.Module):
         Returns:
             (batch, max_seq_len, num_phonemes) logits for each phoneme class
         """
-        # Pack padded sequence for efficient processing
-        # This tells RNN to skip padding, making it faster
         packed = nn.utils.rnn.pack_padded_sequence(
             x, 
             lengths.cpu(), 
@@ -64,20 +62,12 @@ class RNNDecoder(nn.Module):
             enforce_sorted=False
         )
         
-        # Run through RNN
-        # output: packed sequence of hidden states
-        # hidden: final hidden state (not used for CTC)
         output, hidden = self.rnn(packed)
-        
-        # Unpack back to padded tensor
-        # output: (batch, max_seq_len, hidden_dim * num_directions)
+
         output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True)
         
-        # Apply layer normalization (helps with training stability)
         output = self.layer_norm(output)
-        
-        # Project to phoneme vocabulary
-        # logits: (batch, max_seq_len, num_phonemes)
+
         logits = self.fc(output)
         
         return logits

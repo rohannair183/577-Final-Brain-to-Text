@@ -8,13 +8,10 @@ class TransformerDecoder(nn.Module):
                  num_layers=6, num_heads=8, dropout=0.1, max_len=5000):
         super().__init__()
         
-        # Input projection
         self.input_projection = nn.Linear(input_dim, d_model)
         
-        # Positional encoding
         self.positional_encoding = PositionalEncoding(d_model, dropout, max_len)
         
-        # Transformer encoder layers
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
             nhead=num_heads,
@@ -23,8 +20,7 @@ class TransformerDecoder(nn.Module):
             batch_first=True
         )
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers)
-        
-        # Output projection
+
         self.fc = nn.Linear(d_model, num_phonemes)
         
     def forward(self, x, lengths):

@@ -174,24 +174,3 @@ debug:
   
   # Data validation
   check_data_once: true       # Validate data shapes/types on first batch
-
-# ============================================================================
-# NOTES & REMINDERS
-# ============================================================================
-# RNN Baseline Notes:
-# - Simpler than LSTM: no cell state, just hidden state
-# - Faster training: ~30% faster than LSTM
-# - Less memory: can use larger batch sizes
-# - Good baseline: if LSTM doesn't beat this significantly, may have other issues
-# - Comparison: Run this first, then compare LSTM/Transformer performance
-#
-# TODO List:
-# [x] Created simple RNN baseline model
-# [ ] Run scripts/explore_phonemes.py to find actual num_phonemes
-# [ ] Update num_phonemes in this config
-# [ ] Train RNN baseline to get benchmark numbers
-# [ ] Compare with LSTM performance
-# [ ] If RNN works well, try:
-#     - Increase hidden_dim (256 -> 512)
-#     - Add more layers (2 -> 3)
-#     - Try 'relu' nonlinearity instead of 'tanh'

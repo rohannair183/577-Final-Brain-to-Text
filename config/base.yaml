@@ -183,18 +183,3 @@ debug:
   
   # Data validation
   check_data_once: true       # Validate data shapes/types on first batch
-
-# ============================================================================
-# NOTES & REMINDERS
-# ============================================================================
-# TODO List:
-# [ ] Run scripts/explore_phonemes.py to find actual num_phonemes
-# [ ] Update num_phonemes in this config
-# [ ] Verify session names match your data directory
-# [ ] Set up Weights & Biases if desired (update wandb settings)
-# [ ] Create phoneme-to-character mapping for WER/CER metrics
-# [ ] After baseline works, experiment with:
-#     - Different model types (transformer, conformer)
-#     - Different learning rates
-#     - Data augmentation
-#     - Ensemble methods

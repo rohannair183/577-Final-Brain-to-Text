@@ -24,9 +24,8 @@ class CNNDecoder(nn.Module):
         self.fc = nn.Linear(channels[-1], num_phonemes)
         
     def forward(self, x, lengths):
-        # x: (batch, time, input_dim)
-        x = x.transpose(1, 2)  # (batch, input_dim, time)
+        x = x.transpose(1, 2) 
         x = self.conv_layers(x)
-        x = x.transpose(1, 2)  # (batch, time, channels)
+        x = x.transpose(1, 2)
         logits = self.fc(x)
         return logits
