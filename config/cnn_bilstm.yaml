@@ -2,14 +2,14 @@
 # CNN + BiLSTM config (fits models in src/models/cnn_bilstm.py)
 
 experiment:
-  name: "cnn_bilstm_baseline"
+  name: "cnn_bilstm"
   description: "Simple Conv frontend + BiLSTM encoder. Supports CTC modes"
   seed: 42
   tags: ["cnn", "lstm", "ctc"]
 
 data:
   data_root: data/raw/hdf5_data_final
-  # Training sessions (start with one, add more as you validate)
+  # Training sessions  (start with one, add more as you validate)
   train_sessions:
   - t15.2023.08.11
   - t15.2023.08.13
