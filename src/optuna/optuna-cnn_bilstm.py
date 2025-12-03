@@ -43,7 +43,9 @@ if __name__ == "__main__":
     study = optuna.create_study(
         direction="minimize",
         study_name="cnn_bilstm_hyperparam_search",
-        storage=None
+        storage=None, 
+        ampler=optuna.samplers.TPESampler(seed=42),
+        pruner=optuna.pruners.MedianPruner()   
     )
 
     study.optimize(objective, timeout=10800, n_trials=50)  
