@@ -1,0 +1,90 @@
+# Quick 1-epoch LSTM run for decoding + WER check
+
+experiment:
+  name: "lstm_one_epoch_quick"
+  description: "Single-epoch LSTM run to generate phoneme predictions"
+  seed: 42
+  tags: ["lstm", "ctc", "quick"]
+
+data:
+  data_root: "data/raw"
+  train_sessions:
+    - "t15.2023.08.11"
+    - "t15.2023.08.13"
+    - "t15.2023.08.18"
+  val_sessions:
+    - "t15.2023.09.24"
+  test_sessions:
+    - "t15.2023.10.01"
+  batch_size: 8
+  num_workers: 0
+  pin_memory: false
+  shuffle_train: true
+
+model:
+  type: "lstm"
+  input_dim: 512
+  num_phonemes: 41
+  hidden_dim: 256
+  num_layers: 2
+  dropout: 0.3
+  bidirectional: true
+
+training:
+  num_epochs: 1
+  loss:
+    type: "ctc"
+    blank_id: 0
+  optimizer:
+    type: "adamw"
+    learning_rate: 0.001
+    weight_decay: 0.01
+    betas: [0.9, 0.999]
+    eps: 1.0e-8
+  scheduler:
+    type: "cosine"
+    t_max: 5
+    eta_min: 1.0e-6
+  gradient_clip: 1.0
+  checkpoint_dir: "experiments/lstm_one_epoch_quick"
+  save_every_n_epochs: 1
+  keep_last_n_checkpoints: 1
+  early_stopping:
+    enabled: false
+    patience: 5
+    metric: "val_per"
+    mode: "min"
+
+evaluation:
+  validate_every_n_epochs: 1
+  compute_per: true
+  compute_wer: true
+  compute_cer: true
+  phoneme_to_char_map: null
+  decode_method: "greedy"
+  beam_width: 5
+
+logging:
+  log_dir: "experiments/lstm_one_epoch_quick/logs"
+  log_every_n_steps: 20
+  use_tensorboard: false
+  use_wandb: false
+  wandb_project: "brain-to-text-challenge"
+  wandb_entity: null
+  log_learning_rate: true
+  log_gradients: false
+  log_weights: false
+  log_n_predictions: 3
+
+compute:
+  device: "cuda"
+  mixed_precision: false
+  cudnn_benchmark: true
+  deterministic: false
+
+debug:
+  fast_dev_run: false
+  overfit_batches: 0
+  profile: false
+  detect_anomaly: false
+  check_data_once: true

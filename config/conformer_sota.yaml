@@ -1,0 +1,74 @@
+# Conformer encoder (widely used CNN+Transformer hybrid in speech ASR)
+experiment:
+  name: "conformer_sota"
+  description: "Conformer encoder with relative convolutional modeling + CTC"
+  seed: 42
+
+data:
+  data_root: "data/hdf5_data_final"
+  train_sessions:
+    - "t15.2023.08.11"
+    - "t15.2023.08.13"
+    - "t15.2023.08.18"
+    - "t15.2023.08.20"
+  val_sessions:
+    - "t15.2023.09.24"
+  test_sessions:
+    - "t15.2023.10.01"
+  batch_size: 12
+  num_workers: 0
+  pin_memory: false
+  shuffle_train: true
+
+model:
+  type: "conformer"
+  input_dim: 512
+  num_phonemes: 41
+  encoder_dim: 256
+  num_layers: 12
+  num_heads: 4
+  dropout: 0.1
+
+training:
+  num_epochs: 5
+  loss:
+    type: "ctc"
+    blank_id: 0
+  optimizer:
+    type: "adamw"
+    learning_rate: 0.0006
+    weight_decay: 0.003
+  scheduler:
+    type: "cosine"
+    t_max: 20
+    eta_min: 1.0e-6
+  gradient_clip: 0.5
+  checkpoint_dir: "experiments/conformer_sota"
+  save_every_n_epochs: 5
+  keep_last_n_checkpoints: 3
+
+evaluation:
+  validate_every_n_epochs: 1
+  compute_per: true
+  compute_wer: false
+  compute_cer: false
+
+logging:
+  log_dir: "experiments/conformer_sota/logs"
+  log_every_n_steps: 50
+  use_tensorboard: true
+  use_wandb: false
+  log_n_predictions: 5
+
+compute:
+  device: "cuda"
+  mixed_precision: false
+  cudnn_benchmark: true
+  deterministic: false
+
+debug:
+  fast_dev_run: false
+  overfit_batches: 0
+  profile: false
+  detect_anomaly: false
+  check_data_once: true
