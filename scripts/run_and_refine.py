@@ -80,8 +80,15 @@ def call_llm(raw_pred_text: str, transcript: str, include_reference: bool = True
 
         client = OpenAI(api_key=api_key)
         prompt_lines = [
-            "You are cleaning up a noisy ASR transcription.",
-            f"Noisy hypothesis: {raw_pred_text}",
+            "You are cleaning up a noisy ASR transcription. The hypothesis is a rough phoneme-to-text rendering; rewrite it as the most likely fluent sentence. "
+            "Here are some examples: [0] raw : wich iz mast uksuun binz wee awl looz owt, refined : which is most accurate since we all lose out, truth: Which is most unfortunate because we all lose out.",
+            "[1] raw : i ad u lasttee kumuttee eet fersee bifawr this kurd , truth   : I had a nineteen seventy eight version before this one."
+            "[2] raw : yoo get bak intoo u makukul thingk, truth   : You get back into a political thing."
+            "[3] raw     : in sum anunul it waz lik ener day, truth   : In San Antonio it was like every day."
+            "[4] raw     : doo yoo say kom with shurz, truth   : Do you stay home with yours?"
+            "[5] raw     : i kind uv luk it it this way, truth   : I kind of look at it this way."
+            "[7] raw     : but thay never say hoo, truth   : But they never say who."
+            f"Noisy phoneme-ish hypothesis: {raw_pred_text}",
         ]
         if include_reference:
             prompt_lines.append(
