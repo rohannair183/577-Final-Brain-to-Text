@@ -104,64 +104,79 @@ class Trainer:
         return avg_loss
     
     def validate(self):
-        """Run validation"""
-        if self.val_loader is None:
-            return None
-        
-        self.model.eval()
-        total_loss = 0
-        num_batches = 0
-        all_metrics = []
-        
-        with torch.no_grad():
-            for batch_idx, batch in tqdm(enumerate(self.val_loader), desc="Validation"):
-                inputs = batch['input_features'].to(self.device)
-                targets = batch['target_ids'].to(self.device)
-                input_lengths = batch['input_lengths']
-                target_lengths = batch['target_lengths']
-                transcriptions = batch['transcriptions']
-                
-                # Forward pass
-                outputs = self.model(inputs, input_lengths)
+            """Run validation"""
+            if self.val_loader is None:
+                return None
+            
+            self.model.eval()
+            total_loss = 0
+            num_batches = 0
+            all_metrics = []
+            
+            with torch.no_grad():
+                for batch_idx, batch in tqdm(enumerate(self.val_loader), desc="Validation"):
+                    inputs = batch['input_features'].to(self.device)
+                    targets = batch['target_ids'].to(self.device)
+                    input_lengths = batch['input_lengths']
+                    target_lengths = batch['target_lengths']
+                    transcriptions = batch['transcriptions']
                     
-                # Compute loss
-                loss = self.criterion(outputs, targets, input_lengths, target_lengths)
+                    # Forward pass
+                    outputs = self.model(inputs, input_lengths)
+                        
+                    # Compute loss
+                    loss = self.criterion(outputs, targets, input_lengths, target_lengths)
+                    
+                    total_loss += loss.item()
+                    num_batches += 1
+                    
+                    # Compute metrics
+                    batch_metrics = self.metrics.compute_metrics(
+                        outputs,
+                        targets,
+                        input_lengths,
+                        target_lengths,
+                        transcriptions
+                    )
+
+                    # Only keep metrics if they are not None
+                    if batch_metrics is not None:
+                        all_metrics.append(batch_metrics)
+            
+            # Average loss
+            avg_loss = total_loss / max(1, num_batches)
+
+            # Filter out any None just in case
+            valid_metrics = [m for m in all_metrics if m is not None]
+
+            if len(valid_metrics) > 0:
+                avg_per = sum(m['per'] for m in valid_metrics) / len(valid_metrics)
                 
-                total_loss += loss.item()
-                num_batches += 1
+                result = {
+                    'val_loss': avg_loss,
+                    'val_per': avg_per
+                }
                 
-                # Compute metrics
-                batch_metrics = self.metrics.compute_metrics(
-                    outputs,
-                    targets,
-                    input_lengths,
-                    target_lengths,
-                    transcriptions
-                )
-                all_metrics.append(batch_metrics)
+                if 'wer' in valid_metrics[0]:
+                    result['val_wer'] = sum(m['wer'] for m in valid_metrics) / len(valid_metrics)
+                    result['val_cer'] = sum(m['cer'] for m in valid_metrics) / len(valid_metrics)
                 
-        
-        # Aggregate
-        avg_loss = total_loss / num_batches
-        avg_per = sum(m['per'] for m in all_metrics) / len(all_metrics)
-        
-        result = {
-            'val_loss': avg_loss,
-            'val_per': avg_per
-        }
-        
-        if 'wer' in all_metrics[0]:
-            result['val_wer'] = sum(m['wer'] for m in all_metrics) / len(all_metrics)
-            result['val_cer'] = sum(m['cer'] for m in all_metrics) / len(all_metrics)
-        
-        self.val_losses.append(avg_loss)
-        self.val_pers.append(avg_per)
-        
-        # Step plateau scheduler
-        if self.scheduler and isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-            self.scheduler.step(avg_loss)
-        
-        return result
+                # Step plateau scheduler
+                if self.scheduler and isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                    self.scheduler.step(avg_loss)
+            
+            else:
+                # No metrics were produced; fall back to safe defaults
+                result = {
+                    'val_loss': avg_loss,
+                    'val_per': 1.0
+                }
+            
+            # Single, consistent logging of history
+            self.val_losses.append(result['val_loss'])
+            self.val_pers.append(result['val_per'])
+            
+            return result
     
     def train(self, num_epochs):
         """Full training loop"""
