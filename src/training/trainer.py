@@ -188,15 +188,8 @@ class Trainer:
                     self.best_epoch = epoch
                     self.best_metrics = val_metrics
                     self.save_checkpoint('best_model.pt')
-<<<<<<< HEAD
                     print(f"✓ New best PER: {self.best_val_per:.3f} (epoch {epoch})")
 
-=======
-                    print(f"✓ New best PER: {self.best_val_per:.3f}")
-                
-            # Save metrics to CSV after each epoch
-            self.save_metrics_to_csv(f"results/{self.config['model']['type']}_metrics.csv")
->>>>>>> 14188cc41c5b4ce968690566eb32871b7aae3790
             
             # Periodic checkpoint
             if (epoch + 1) % 5 == 0:

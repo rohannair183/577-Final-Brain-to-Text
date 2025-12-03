@@ -5,11 +5,8 @@ from .conformer import ConformerDecoder
 from .simple_cnn import CNNDecoder
 from .tcn import TCNDecoder
 from .rnn import RNNDecoder
-<<<<<<< HEAD
-=======
 from .cnn_bilstm import CNNBiLSTMDecoder
 
->>>>>>> 14188cc41c5b4ce968690566eb32871b7aae3790
 
 def get_model(model_config):
     """
@@ -70,7 +67,6 @@ def get_model(model_config):
             kernel_size=model_config.get('kernel_size', 3)
         )
     
-<<<<<<< HEAD
     elif model_type == 'tcn':
         return TCNDecoder(
             input_dim=model_config.get('input_dim', 512),
@@ -80,7 +76,6 @@ def get_model(model_config):
             kernel_size=model_config.get('kernel_size', 3),
             dropout=model_config.get('dropout', 0.2)
         )
-=======
     elif model_type == 'cnn_bilstm':
         return CNNBiLSTMDecoder(
             input_dim=model_config.get('input_dim', 512),
@@ -92,7 +87,6 @@ def get_model(model_config):
             bidirectional=model_config.get('bidirectional', True)
         )
 
->>>>>>> 14188cc41c5b4ce968690566eb32871b7aae3790
     
     else:
         raise ValueError(f"Unknown model type: {model_type}")
