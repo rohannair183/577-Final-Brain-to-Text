@@ -9,7 +9,7 @@ experiment:
 
 data:
   data_root: data/raw/hdf5_data_final
-  # Training sessions (start with one, add more as you validate)
+  # Training sessions  (start with one, add more as you validate)
   train_sessions:
   - t15.2023.08.11
   - t15.2023.08.13
