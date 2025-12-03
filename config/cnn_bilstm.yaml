@@ -1,12 +1,11 @@
 # config/cnn_bilstm.yaml
-# CNN + BiLSTM baseline config (fits models in src/models/cnn_bilstm.py)
-# Based on config/base.yaml with model-specific fields for CTCModel/Seq2SeqModel
+# CNN + BiLSTM config (fits models in src/models/cnn_bilstm.py)
 
 experiment:
   name: "cnn_bilstm_baseline"
-  description: "Simple Conv frontend + BiLSTM encoder. Supports CTC and Seq2Seq modes"
+  description: "Simple Conv frontend + BiLSTM encoder. Supports CTC modes"
   seed: 42
-  tags: ["cnn", "lstm", "ctc", "seq2seq", "baseline"]
+  tags: ["cnn", "lstm", "ctc"]
 
 data:
   data_root: data/raw/hdf5_data_final
@@ -30,35 +29,34 @@ data:
 
 # Model configuration specific to src/models/cnn_bilstm.py
 model:
-  # Use a descriptive type. Note: the repository's model factory may need
-  # a matching entry for 'cnn_bilstm' to instantiate a model automatically.
   type: "cnn_bilstm"
 
-  # Global I/O dims
-  input_dim: 512            # feature dimension per time frame (unused for this model)
+  input_dim: 512            # feature dimension per time frame
   num_phonemes: 41          # keep for compatibility; also set vocab_size below
   vocab_size: 41            # vocabulary size / number of output tokens
 
-  # Conv frontend params (SimpleConvFrontend)
+  # Cnn frontend params (SimpleConvFrontend)
   conv_out: 64              # output channels from conv frontend (out_ch)
   conv_kernel_time: 25      # temporal kernel size used by frontend
 
-  # BLSTM backend params (for CTCModel)
+  # Bi-LSTM backend layers (CTCModel)
   lstm_hidden: 256
   lstm_layers: 2
 
-# Training configuration
+# Training configuration 
 training:
-  num_epochs: 15
+  # number of epochs for each training
+  num_epochs: 20
 
   # Loss options: 'ctc' or 'cross_entropy' 
   loss:
     type: "ctc"
     blank_id: 0
 
+  # Optimizer options : 'adamw' or 'sgd'
   optimizer:
     type: "adamw"
-    learning_rate: 0.0005
+    learning_rate: 0.0005 
     weight_decay: 0.01
     betas: [0.9, 0.999]
     eps: 0.00000001

@@ -12,8 +12,8 @@ class CNNBiLSTMDecoder(nn.Module):
                  num_phonemes=50, lstm_layers=2, dropout=0.2, bidirectional=True):
         """
         Args:
-            input_dim: Dimension of input features (512 from neural data)
-            cnn_channels: Number of channels in convolutional layer
+            input_dim: Input Dimension of the features (512 from neural data)
+            cnn_channels: Number of channels in cnn layer
             lstm_hidden_dim: Hidden state size for LSTM
             num_phonemes: Number of output phoneme classes
             lstm_layers: Number of BiLSTM layers
@@ -22,9 +22,9 @@ class CNNBiLSTMDecoder(nn.Module):
         """
         super().__init__()
         
-        self.bidirectional = bidirectional
-        self.lstm_layers = lstm_layers
-        self.lstm_hidden_dim = lstm_hidden_dim
+        self.bidirectional = bidirectional #
+        self.lstm_layers = lstm_layers # number of lstm layers
+        self.lstm_hidden_dim = lstm_hidden_dim # hidden lstm dimension
         
         # 1D Convolution to extract local temporal features
         self.conv1 = nn.Conv1d(
@@ -33,8 +33,8 @@ class CNNBiLSTMDecoder(nn.Module):
             kernel_size=3, 
             padding=1
         )
-        self.bn1 = nn.BatchNorm1d(cnn_channels)
-        self.relu = nn.ReLU()
+        self.bn1 = nn.BatchNorm1d(cnn_channels) # compute batch norm for conv1
+        self.relu = nn.ReLU() # ReLU activation functions 
         
         # BiLSTM for temporal sequence modeling
         self.lstm = nn.LSTM(
@@ -46,11 +46,11 @@ class CNNBiLSTMDecoder(nn.Module):
             bidirectional=bidirectional
         )
         
-        # Output projection
+        # Output projection 
         fc_input_dim = lstm_hidden_dim * 2 if bidirectional else lstm_hidden_dim
         self.fc = nn.Linear(fc_input_dim, num_phonemes)
         
-        # Optional layer normalization
+        # Optional extra layer normalization
         self.layer_norm = nn.LayerNorm(fc_input_dim)
     
     def forward(self, x, lengths):
