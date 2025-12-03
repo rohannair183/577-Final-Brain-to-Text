@@ -20,7 +20,7 @@ def objective(trial):
     # Training hyperparameters
     config['training']['optimizer']['learning_rate'] = trial.suggest_float("learning_rate", 0.00001, 0.0005 , log=True)
     config['training']['optimizer']['weight_decay'] = trial.suggest_float("weight_decay", 1e-4, 1e-2, log=True)
-    config['training']['gradient_clip'] = trial.suggest_float("gradient_clip", 0.1, 5.0)
+    config['training']['gradient_clip'] = trial.suggest_float("gradient_clip", 0.1, 3.0)
     config['data']['batch_size'] = trial.suggest_categorical("batch_size", [4, 8, 16])
 
     # Create model and data
