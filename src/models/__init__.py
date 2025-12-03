@@ -3,6 +3,7 @@ from .lstm import LSTMDecoder
 from .transformer import TransformerDecoder
 from .conformer import ConformerDecoder
 from .simple_cnn import CNNDecoder
+from .tcn import TCNDecoder
 from .rnn import RNNDecoder
 from .cnn_bilstm import CNNBiLSTMDecoder
 
@@ -66,6 +67,15 @@ def get_model(model_config):
             kernel_size=model_config.get('kernel_size', 3)
         )
     
+    elif model_type == 'tcn':
+        return TCNDecoder(
+            input_dim=model_config.get('input_dim', 512),
+            num_phonemes=model_config['num_phonemes'],
+            num_levels=model_config.get('num_levels', 5),
+            hidden_dim=model_config.get('hidden_dim', 256),
+            kernel_size=model_config.get('kernel_size', 3),
+            dropout=model_config.get('dropout', 0.2)
+        )
     elif model_type == 'cnn_bilstm':
         return CNNBiLSTMDecoder(
             input_dim=model_config.get('input_dim', 512),

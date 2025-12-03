@@ -5,45 +5,57 @@ import torch.nn as nn
 class CTCLoss(nn.Module):
     """
     CTC Loss for brain-to-phoneme decoding.
-    Handles variable-length input/output without explicit alignment.
+    Expects:
+      - logits: (batch, time, num_classes)
+      - targets: (batch, max_target_len), padded with anything
+      - input_lengths: (batch,)
+      - target_lengths: (batch,)  # number of valid labels per sample
     """
     def __init__(self, blank_id=0):
         super().__init__()
-        self.ctc_loss = nn.CTCLoss(blank=blank_id, reduction='mean', zero_infinity=True)
+        self.ctc_loss = nn.CTCLoss(
+            blank=blank_id,
+            reduction='mean',
+            zero_infinity=True
+        )
         self.blank_id = blank_id
-    
+
     def forward(self, logits, targets, input_lengths, target_lengths):
         """
         Args:
-            logits: (batch, time, num_classes) - raw predictions
-            targets: (batch, target_len) - target phoneme IDs
-            input_lengths: (batch,) - length of each neural sequence
-            target_lengths: (batch,) - length of each target sequence
-        
-        Returns:
-            loss value
+            logits: (B, T, C) raw scores
+            targets: (B, max_target_len) label IDs
+            input_lengths: (B,) lengths of each input sequence (time steps)
+            target_lengths: (B,) number of labels per sample (no padding)
         """
-        # CTC expects: (time, batch, num_classes)
+        # 1) CTC expects log-probabilities of shape (T, B, C)
         log_probs = torch.log_softmax(logits, dim=-1)
-        log_probs = log_probs.transpose(0, 1)  # (time, batch, classes)
-        
-        # Flatten targets (CTC expects 1D concatenated targets)
+        log_probs = log_probs.transpose(0, 1)  # (T, B, C)
+
+        # 2) Flatten targets according to target_lengths
+        batch_size = targets.size(0)
         targets_flat = []
-        for i, length in enumerate(target_lengths):
-            target_seq = targets[i][:length]
-            # Remove padding (-1)
-            target_seq = target_seq[target_seq != -1]
-            targets_flat.append(target_seq)
-        
-        targets_flat = torch.cat(targets_flat)
-        
+        for i in range(batch_size):
+            L = int(target_lengths[i].item())
+            if L > 0:
+                targets_flat.append(targets[i, :L])
+        if len(targets_flat) == 0:
+            # No valid targets? Return zero loss.
+            return torch.tensor(0.0, device=logits.device, requires_grad=True)
+
+        targets_flat = torch.cat(targets_flat, dim=0)
+
+        # 3) CTCLoss expects:
+        #    - log_probs: (T, B, C)
+        #    - targets_flat: (sum(target_lengths),)
+        #    - input_lengths: (B,)
+        #    - target_lengths: (B,)
         loss = self.ctc_loss(
             log_probs,
             targets_flat,
             input_lengths,
             target_lengths
         )
-        
         return loss
 
 
