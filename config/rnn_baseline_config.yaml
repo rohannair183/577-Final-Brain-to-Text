@@ -1,13 +1,13 @@
 # config/rnn_baseline_config.yaml
 # Brain-to-Text Neural Decoding Configuration
-# Simple RNN Baseline - faster and simpler than LSTM
+# Simple RNN Baseline
 
 # ============================================================================
 # EXPERIMENT METADATA
 # ============================================================================
 experiment:
   name: "baseline_rnn_bidirectional"
-  description: "Simple bidirectional RNN baseline - faster than LSTM for quick experiments"
+  description: "Simple bidirectional RNN baseline"
   seed: 42
   tags: ["rnn", "ctc", "baseline", "simple"]
 
@@ -111,8 +111,8 @@ model:
   num_phonemes: 41            # Number of phoneme classes (UPDATE after exploring data!)
   
   # RNN-specific parameters
-  hidden_dim: 768             # Hidden state size (RNN needs less than LSTM)
-  num_layers: 5               # Number of RNN layers (2-3 is typical)
+  hidden_dim: 128             # Hidden state size (RNN needs less than LSTM)
+  num_layers: 3               # Number of RNN layers (2-3 is typical)
   dropout: 0.4                # Dropout rate (lower for simpler model)
   bidirectional: true         # Bidirectional RNN (almost always better)
   nonlinearity: "tanh"        # Options: "tanh" or "relu"
@@ -126,7 +126,7 @@ model:
 # TRAINING CONFIGURATION
 # ============================================================================
 training:
-  num_epochs: 300              # RNN trains faster, can do more epochs
+  num_epochs: 15              # RNN trains faster, can do more epochs
   
   # Loss function
   loss:
@@ -136,7 +136,7 @@ training:
   # Optimizer
   optimizer:
     type: "adamw"             # AdamW with weight decay
-    learning_rate: 0.005      # Slightly higher LR for simpler model
+    learning_rate: 0.001      # Slightly higher LR for simpler model
     weight_decay: 0.01        # L2 regularization
     betas: [0.9, 0.999]       # Adam beta parameters
     eps: 1.0e-8               # Adam epsilon for numerical stability
@@ -151,7 +151,7 @@ training:
   gradient_clip: 1.0          # Clip gradients to prevent explosion
   
   # Checkpointing
-  checkpoint_dir: "experiments/baseline_rnn_bidirectional_crossentropy_512_hidden"
+  checkpoint_dir: "experiments/baseline_rnn_bidirectional"
   save_every_n_epochs: 5      # Save checkpoint every 5 epochs
   keep_last_n_checkpoints: 3  # Only keep last 3 checkpoints to save space
   

@@ -1,6 +1,7 @@
 # Bytecode and cache
 __pycache__/
 *.pyc
+src/models/__pycache__/
 
 # Virtual environments
 .venv/

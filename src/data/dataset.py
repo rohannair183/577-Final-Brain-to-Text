@@ -1,4 +1,4 @@
-# src/data/dataset.py - FINAL FLEXIBLE VERSION
+# src/data/dataset.py
 
 import h5py
 import torch

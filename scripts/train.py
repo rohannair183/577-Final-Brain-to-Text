@@ -19,7 +19,7 @@ def main(config_path):
     # Create dataloaders
     train_loader, val_loader = create_dataloaders(config)
     
-    # Create model (automatically picks the right one!)
+    # Create model
     model = get_model(config['model'])
     print(f"Created model: {config['model']['type']}")
     print(f"Total parameters: {sum(p.numel() for p in model.parameters()):,}")
